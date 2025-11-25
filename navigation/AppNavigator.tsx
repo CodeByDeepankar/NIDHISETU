@@ -20,6 +20,7 @@ import { WelcomeScreen } from '@/screens/auth/welcome-screen';
 import { BeneficiaryDashboardScreen } from '@/screens/beneficiary/dashboard-screen';
 import { BeneficiaryLoanAssistantScreen } from '@/screens/beneficiary/loan-assistant-screen';
 import { LoanDetailsScreen } from '@/screens/beneficiary/loan-details-screen';
+import { LoanEvidenceCameraScreen } from '@/screens/beneficiary/loan-evidence-camera-screen';
 import { PreviousSubmissionsScreen } from '@/screens/beneficiary/previous-submissions-screen';
 import { BeneficiaryProfileScreen } from '@/screens/beneficiary/profile-screen';
 import { SyncStatusScreen } from '@/screens/beneficiary/sync-status-screen';
@@ -110,14 +111,16 @@ const BeneficiaryNavigator = () => {
       <BeneficiaryDrawer.Screen name="SyncStatus" component={SyncStatusScreen} options={{ title: 'Sync Status' }} />
       <BeneficiaryDrawer.Screen name="BeneficiaryProfile" component={BeneficiaryProfileScreen} options={{ title: 'Profile' }} />
       <BeneficiaryDrawer.Screen name="LoanAssistant" component={BeneficiaryLoanAssistantScreen} options={{ title: 'Loan Copilot' }} />
-      <BeneficiaryDrawer.Screen 
-        name="LoanDetails" 
-        component={LoanDetailsScreen} 
-        options={{ 
-          title: 'Loan Details',
-          drawerItemStyle: { display: 'none' }
-        }} 
-      />
+        <BeneficiaryDrawer.Screen name="LoanDetails" component={LoanDetailsScreen} options={{ title: 'Loan Details', drawerItemStyle: { display: 'none' } }} />
+        <BeneficiaryDrawer.Screen
+          name="LoanEvidenceCamera"
+          component={LoanEvidenceCameraScreen}
+          options={{
+            title: 'Capture Evidence',
+            drawerItemStyle: { display: 'none' },
+            headerShown: false,
+          }}
+        />
     </BeneficiaryDrawer.Navigator>
   );
 };

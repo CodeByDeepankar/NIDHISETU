@@ -13,6 +13,7 @@ export type BeneficiaryDrawerParamList = {
   SyncStatus: undefined;
   LoanAssistant: undefined;
   LoanDetails: undefined;
+  LoanEvidenceCamera: { requirementId?: string; requirementName?: string; loanId?: string } | undefined;
 };
 
 export type OfficerStackParamList = {

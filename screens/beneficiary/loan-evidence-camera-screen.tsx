@@ -1,10 +1,9 @@
-import { CameraView, useCameraPermissions } from 'expo-camera';
+import { Camera, CameraView } from 'expo-camera';
 import * as Location from 'expo-location';
 import * as MediaLibrary from 'expo-media-library';
-import { addDoc, collection, serverTimestamp } from 'firebase/firestore';
 import { getDownloadURL, getStorage, ref, uploadBytes } from 'firebase/storage';
-import { useEffect, useMemo, useRef, useState } from 'react';
-import { Alert, Image, StyleSheet, TouchableOpacity, View } from 'react-native';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { Alert, Image, InteractionManager, StyleSheet, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { captureRef } from 'react-native-view-shot';
 
@@ -12,42 +11,109 @@ import { AppButton } from '@/components/atoms/app-button';
 import { AppIcon } from '@/components/atoms/app-icon';
 import { AppText } from '@/components/atoms/app-text';
 import { useAppTheme } from '@/hooks/use-app-theme';
-import { app, db } from '@/lib/firebase';
+import { useSubmissions } from '@/hooks/use-submissions';
+import { app } from '@/lib/firebase';
+import type { BeneficiaryDrawerParamList } from '@/navigation/types';
 import { useAuthStore } from '@/state/authStore';
+import type { DrawerScreenProps } from '@react-navigation/drawer';
 
 const storage = getStorage(app);
 
-export interface LoanEvidenceCameraScreenProps {
-  loanId?: string;
-  onUploadComplete?: (payload: { imageURL: string; documentId: string }) => void;
-}
+type LoanEvidenceCameraProps = DrawerScreenProps<BeneficiaryDrawerParamList, 'LoanEvidenceCamera'>;
 
-export const LoanEvidenceCameraScreen = ({ loanId, onUploadComplete }: LoanEvidenceCameraScreenProps) => {
+export const LoanEvidenceCameraScreen = ({ route, navigation }: LoanEvidenceCameraProps) => {
+  const { requirementId, requirementName, loanId } = route.params ?? {};
   const theme = useAppTheme();
   const cameraRef = useRef<CameraView | null>(null);
-  const containerRef = useRef<View | null>(null);
+  const composedRef = useRef<View | null>(null);
   const userId = useAuthStore((state) => state.profile?.id ?? 'anonymous');
+  const { submitEvidence } = useSubmissions();
 
-  const [permission, requestPermission] = useCameraPermissions();
-  const [mediaPermission, requestMediaPermission] = MediaLibrary.usePermissions();
+  const [hasCameraPermission, setHasCameraPermission] = useState<boolean>();
+  const [hasMediaPermission, setHasMediaPermission] = useState<boolean>();
   const [hasLocationPermission, setHasLocationPermission] = useState<boolean>();
   const [photoUri, setPhotoUri] = useState<string>();
   const [isCapturing, setIsCapturing] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const [location, setLocation] = useState<Location.LocationObject | null>(null);
 
+  const requestMediaPermission = useCallback(async () => {
+    try {
+      const status = await MediaLibrary.requestPermissionsAsync();
+      const granted = status.status === 'granted';
+      setHasMediaPermission(granted);
+      if (!granted) {
+        console.warn('Media library permission denied. Saving to gallery will be skipped.');
+      }
+      return granted;
+    } catch (error) {
+      console.warn('Media library permission error', error);
+      Alert.alert(
+        'Gallery access limited',
+        'Saving captures to the device gallery is only available in a development build. Evidence uploads will continue.'
+      );
+      setHasMediaPermission(false);
+      return false;
+    }
+  }, []);
+
+  const saveToGalleryIfAllowed = useCallback(
+    async (uri: string) => {
+      if (!hasMediaPermission) {
+        return;
+      }
+      try {
+        await MediaLibrary.saveToLibraryAsync(uri);
+      } catch (error) {
+        console.warn('Failed to save to media library', error);
+      }
+    },
+    [hasMediaPermission]
+  );
+
+  const captureWatermarkedEvidence = useCallback(async () => {
+    if (!composedRef.current) {
+      throw new Error('Watermark view not available');
+    }
+    await new Promise((resolve) => InteractionManager.runAfterInteractions(resolve));
+    return captureRef(composedRef.current, {
+      format: 'jpg',
+      quality: 0.9,
+      result: 'tmpfile',
+    });
+  }, []);
+
   useEffect(() => {
-    void (async () => {
-       if (!permission) {
-         await requestPermission();
-       }
-       if (!mediaPermission) {
-         await requestMediaPermission();
-       }
-       const locationStatus = await Location.requestForegroundPermissionsAsync();
-       setHasLocationPermission(locationStatus.status === 'granted');
-    })();
-  }, [permission, requestPermission, mediaPermission, requestMediaPermission]);
+    const requestRuntimePermissions = async () => {
+      const cameraStatus = await Camera.requestCameraPermissionsAsync();
+      setHasCameraPermission(cameraStatus.status === 'granted');
+
+      await requestMediaPermission();
+
+      const locationStatus = await Location.requestForegroundPermissionsAsync();
+      setHasLocationPermission(locationStatus.status === 'granted');
+      if (locationStatus.status === 'granted') {
+        const current = await Location.getCurrentPositionAsync({});
+        setLocation(current);
+      }
+    };
+
+    void requestRuntimePermissions();
+  }, [requestMediaPermission]);
+
+  const ensureLocation = async () => {
+    if (hasLocationPermission === false) {
+      const status = await Location.requestForegroundPermissionsAsync();
+      setHasLocationPermission(status.status === 'granted');
+      if (status.status !== 'granted') {
+        Alert.alert('Location needed', 'Grant location access to embed GPS on the photo.');
+        return null;
+      }
+    }
+    const position = await Location.getCurrentPositionAsync({});
+    setLocation(position);
+    return position;
+  };
 
   const handleCapture = async () => {
     if (!cameraRef.current || isCapturing) {
@@ -62,6 +128,7 @@ export const LoanEvidenceCameraScreen = ({ loanId, onUploadComplete }: LoanEvide
       });
       if (result?.uri) {
         setPhotoUri(result.uri);
+        await saveToGalleryIfAllowed(result.uri);
         await ensureLocation();
       }
     } catch (error) {
@@ -72,22 +139,13 @@ export const LoanEvidenceCameraScreen = ({ loanId, onUploadComplete }: LoanEvide
     }
   };
 
-  const ensureLocation = async () => {
-    if (!hasLocationPermission) {
-      const status = await Location.requestForegroundPermissionsAsync();
-      setHasLocationPermission(status.status === 'granted');
-      if (status.status !== 'granted') {
-        Alert.alert('Location needed', 'Grant location access to embed GPS on the photo.');
-        return;
-      }
-    }
-
-    const position = await Location.getCurrentPositionAsync({});
-    setLocation(position);
-  };
-
-  const handleRetake = () => {
-    setPhotoUri(undefined);
+  const uploadToStorage = async (uri: string) => {
+    const response = await fetch(uri);
+    const blob = await response.blob();
+    const filename = `loan-evidence/${userId ?? 'anonymous'}/${Date.now()}.jpg`;
+    const storageRef = ref(storage, filename);
+    await uploadBytes(storageRef, blob, { contentType: 'image/jpeg' });
+    return getDownloadURL(storageRef);
   };
 
   const handleConfirm = async () => {
@@ -95,37 +153,58 @@ export const LoanEvidenceCameraScreen = ({ loanId, onUploadComplete }: LoanEvide
       return;
     }
 
-    if (!location) {
-      await ensureLocation();
-      if (!location) {
-        return;
-      }
+    const activeLocation = location ?? (await ensureLocation());
+    if (!activeLocation) {
+      return;
     }
 
     setIsUploading(true);
     try {
-      const finalUri = await captureRef(containerRef, {
-        format: 'jpg',
-        quality: 0.9,
-        result: 'tmpfile',
+      if (!hasMediaPermission) {
+        await requestMediaPermission();
+      }
+
+      let composedUri: string;
+      try {
+        composedUri = await captureWatermarkedEvidence();
+      } catch (captureError) {
+        console.warn('Failed to capture watermarked evidence, falling back to raw photo', captureError);
+        composedUri = photoUri;
+      }
+
+      await saveToGalleryIfAllowed(composedUri);
+
+      const remoteUrl = await uploadToStorage(composedUri);
+
+      await submitEvidence({
+        assetName: requirementName ?? 'Loan Evidence',
+        mediaType: 'photo',
+        capturedAt: new Date(activeLocation.timestamp ?? Date.now()).toISOString(),
+        submittedAt: new Date().toISOString(),
+        location: {
+          latitude: activeLocation.coords.latitude,
+          longitude: activeLocation.coords.longitude,
+        },
+        remarks: requirementId ? `Requirement: ${requirementId}` : undefined,
+        mediaUrl: remoteUrl,
+        thumbnailUrl: remoteUrl,
       });
 
-      // Save to local gallery
-      if (mediaPermission?.granted) {
-        await MediaLibrary.saveToLibraryAsync(finalUri);
-      }
-      
-      const remoteUrl = await uploadToStorage(finalUri);
-      const docRef = await saveMetadata(remoteUrl);
-      onUploadComplete?.({ imageURL: remoteUrl, documentId: docRef.id });
-      Alert.alert('Saved & Uploaded', 'Evidence photo saved to gallery and uploaded successfully.');
+      Alert.alert('Upload complete', 'Evidence uploaded successfully.', [
+        { text: 'Done', onPress: () => navigation.goBack() },
+      ]);
       setPhotoUri(undefined);
     } catch (error) {
       console.error('Upload failed', error);
-      Alert.alert('Upload failed', 'Could not upload the evidence. Please retry.');
+      const message = error instanceof Error ? error.message : 'Could not upload the evidence. Please retry.';
+      Alert.alert('Upload failed', message);
     } finally {
       setIsUploading(false);
     }
+  };
+
+  const handleRetake = () => {
+    setPhotoUri(undefined);
   };
 
   const watermarkLines = useMemo(() => {
@@ -145,47 +224,30 @@ export const LoanEvidenceCameraScreen = ({ loanId, onUploadComplete }: LoanEvide
       `Lon: ${location.coords.longitude.toFixed(5)}`,
       `Time: ${datetime}`,
       loanId ? `Loan: ${loanId}` : undefined,
+      requirementName ? `Req: ${requirementName}` : undefined,
       userId ? `User: ${userId}` : undefined,
     ].filter(Boolean) as string[];
-  }, [loanId, location, userId]);
+  }, [loanId, location, requirementName, userId]);
 
-  const uploadToStorage = async (uri: string) => {
-    const response = await fetch(uri);
-    const blob = await response.blob();
-    const filename = `loan-evidence/${userId ?? 'anonymous'}/${Date.now()}.jpg`;
-    const storageRef = ref(storage, filename);
-    await uploadBytes(storageRef, blob, { contentType: 'image/jpeg' });
-    return getDownloadURL(storageRef);
-  };
-
-  const saveMetadata = (imageURL: string) => {
-    if (!location) {
-      throw new Error('Missing location metadata');
-    }
-    const payload = {
-      imageURL,
-      latitude: location.coords.latitude,
-      longitude: location.coords.longitude,
-      timestamp: serverTimestamp(),
-      capturedAt: new Date(location.timestamp ?? Date.now()).toISOString(),
-      userId: userId ?? null,
-      loanId: loanId ?? null,
-    };
-
-    return addDoc(collection(db, 'loanEvidence'), payload);
-  };
-
-  if (!permission) {
-    return <View />;
+  if (hasCameraPermission === undefined) {
+    return <SafeAreaView style={styles.center} />;
   }
 
-  if (!permission.granted) {
+  if (hasCameraPermission === false) {
     return (
-      <SafeAreaView style={[styles.center, { backgroundColor: theme.colors.background }]}>
+      <SafeAreaView style={[styles.center, { backgroundColor: theme.colors.background }]}
+        accessibilityRole="alert"
+      >
         <AppText variant="bodyLarge" color="text">
-          Camera permission is required.
+          Camera permission is required to capture evidence.
         </AppText>
-        <AppButton label="Grant permission" onPress={requestPermission} />
+        <AppButton
+          label="Grant Permission"
+          onPress={async () => {
+            const status = await Camera.requestCameraPermissionsAsync();
+            setHasCameraPermission(status.status === 'granted');
+          }}
+        />
       </SafeAreaView>
     );
   }
@@ -195,37 +257,23 @@ export const LoanEvidenceCameraScreen = ({ loanId, onUploadComplete }: LoanEvide
       accessibilityLabel="Loan evidence camera"
     >
       {!photoUri ? (
-        <CameraView style={styles.camera} ref={cameraRef} facing="back" mode="picture">
-          <View style={[styles.cameraOverlay, { paddingBottom: theme.spacing.xl }]}
-            pointerEvents="box-none"
-          >
+        <View style={styles.cameraWrapper}>
+          <CameraView style={StyleSheet.absoluteFill} ref={cameraRef} facing="back" mode="picture" />
+          <View style={[styles.cameraOverlay, { paddingBottom: theme.spacing.xl }]} pointerEvents="box-none">
             <TouchableOpacity
-              style={[
-                styles.captureButton,
-                {
-                  borderColor: theme.colors.text,
-                },
-              ]}
+              style={[styles.captureButton, { borderColor: theme.colors.text }]}
               onPress={handleCapture}
               disabled={isCapturing}
             >
-              <View
-                style={[
-                  styles.captureInner,
-                  {
-                    backgroundColor: theme.colors.primary,
-                  },
-                ]}
-              />
+              <View style={[styles.captureInner, { backgroundColor: theme.colors.primary }]} />
             </TouchableOpacity>
           </View>
-        </CameraView>
+        </View>
       ) : (
-        <View style={styles.previewWrapper} ref={containerRef} collapsable={false}>
+        <View style={styles.previewWrapper} ref={composedRef} collapsable={false}>
           <Image source={{ uri: photoUri }} style={StyleSheet.absoluteFill} />
-          
           <View style={styles.watermarkOverlay} pointerEvents="none">
-             <View style={[styles.watermark, { backgroundColor: theme.colors.overlay }]}
+            <View style={[styles.watermark, { backgroundColor: theme.colors.overlay }]}
               accessibilityLabel="Watermark overlay"
             >
               {watermarkLines.map((line) => (
@@ -235,7 +283,6 @@ export const LoanEvidenceCameraScreen = ({ loanId, onUploadComplete }: LoanEvide
               ))}
             </View>
           </View>
-
           <View style={styles.previewActions}>
             <AppButton label="Retake" icon="camera" variant="outline" onPress={handleRetake} disabled={isUploading} />
             <AppButton label={isUploading ? 'Uploading…' : 'Confirm'} icon="check" onPress={handleConfirm} disabled={isUploading} />
@@ -258,8 +305,8 @@ export const LoanEvidenceCameraScreen = ({ loanId, onUploadComplete }: LoanEvide
             {location
               ? `${location.coords.latitude.toFixed(4)}, ${location.coords.longitude.toFixed(4)}`
               : hasLocationPermission === false
-              ? 'Location permission required'
-              : 'Fetching GPS lock…'}
+                ? 'Location permission required'
+                : 'Fetching GPS lock…'}
           </AppText>
         </View>
       )}
@@ -278,11 +325,15 @@ const styles = StyleSheet.create({
     gap: 16,
     padding: 24,
   },
-  camera: {
+  cameraWrapper: {
     flex: 1,
   },
   cameraOverlay: {
-    flex: 1,
+    position: 'absolute',
+    top: 0,
+    right: 0,
+    bottom: 0,
+    left: 0,
     alignItems: 'center',
     justifyContent: 'flex-end',
     paddingBottom: 32,
