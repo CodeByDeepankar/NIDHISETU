@@ -12,7 +12,7 @@ export const StatsRow = ({ stats }: { stats: { label: string; value: number }[] 
           <AppText variant="labelSmall" color="muted">
             {s.label}
           </AppText>
-          <AppText variant="headlineSmall" color="text" weight="600">
+          <AppText variant="headlineMedium" color="text" weight="600">
             {s.value}
           </AppText>
         </View>

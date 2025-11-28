@@ -1,6 +1,5 @@
-import { LinearGradient } from 'expo-linear-gradient';
 import { useMemo, useState } from 'react';
-import { Alert, ScrollView, StyleSheet, View } from 'react-native';
+import { Alert, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { AppButton } from '@/components/atoms/app-button';
@@ -12,12 +11,15 @@ import { useAppTheme } from '@/hooks/use-app-theme';
 import { twilioVerifyClient } from '@/services/twilioVerify';
 import { useAuthStore } from '@/state/authStore';
 
+import { HeroSurface, InfoRow, Pill, SectionCard, useBeneficiaryPalette } from './ui-kit';
+
 const languageOptions = ['English', 'हिन्दी', 'मराठी'] as const;
 
 export const BeneficiaryProfileScreen = () => {
   const profile = useAuthStore((state) => state.profile);
   const logoutAction = useAuthStore((state) => state.actions.logout);
   const theme = useAppTheme();
+  const palette = useBeneficiaryPalette();
   const [language, setLanguage] = useState<(typeof languageOptions)[number]>('English');
   const [highContrast, setHighContrast] = useState(false);
   const [notifications, setNotifications] = useState(true);
@@ -105,29 +107,56 @@ export const BeneficiaryProfileScreen = () => {
     ]);
   };
 
+  const heroStats = rewardStats.map((stat) => ({ label: stat.label, value: stat.value }));
+
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: theme.colors.background }} edges={['top']}>
-      <ScrollView contentContainerStyle={[styles.content, { paddingBottom: theme.spacing.xxl }]}
+    <SafeAreaView style={[styles.safeArea, { backgroundColor: palette.background }]} edges={['top']}>
+      <ScrollView
+        contentContainerStyle={[styles.content, { paddingBottom: theme.spacing.xxl }]}
         showsVerticalScrollIndicator={false}
       >
-        <ProfileHeader name={personalInfo[0].value} village={personalInfo[1].value} />
+        <HeroSurface>
+          <View style={styles.heroHeader}>
+            <View>
+              <Text style={[styles.eyebrow, { color: palette.subtext }]}>Beneficiary profile</Text>
+              <Text style={[styles.heroTitle, { color: palette.text }]}>{personalInfo[0].value}</Text>
+              <Text style={[styles.heroSubtitle, { color: palette.subtext }]}>{personalInfo[1].value}</Text>
+            </View>
+          </View>
+          <Text style={[styles.heroBody, { color: palette.text }]}>
+            Keep your Farmer Motion identity, contact preferences, and AI verifications aligned in one place.
+          </Text>
+          <View style={styles.heroPills}>
+            <Pill label={`Language · ${language}`} tone="sky" />
+            <Pill label={notifications ? 'Alerts on' : 'Alerts muted'} tone={notifications ? 'success' : 'warning'} />
+            <Pill label={`Visits · ${rewardStats[0].value}`} tone="violet" />
+          </View>
+          <View style={styles.heroMetrics}>
+            {heroStats.map((stat) => (
+              <HeroMetric key={stat.label} label={stat.label} value={stat.value} palette={palette} />
+            ))}
+          </View>
+          <View style={styles.heroActions}>
+            <AppButton label="Update photo" variant="ghost" icon="camera" style={styles.heroButton} />
+            <AppButton label="Redeem points" icon="gift" variant="secondary" style={styles.heroButton} />
+          </View>
+        </HeroSurface>
 
-        <SectionCard title="Personal Information" subtitle="Field details for service delivery">
+        <SectionCard title="Identity & KYC" subtitle="Field details for service delivery" accentLabel="Profile">
           {personalInfo.map((item) => (
             <InfoRow key={item.label} label={item.label} value={item.value} />
           ))}
-          <AppButton label="Edit KYC" variant="secondary" icon="pencil" style={{ marginTop: theme.spacing.md }} />
+          <AppButton label="Edit KYC" variant="secondary" icon="pencil" />
         </SectionCard>
 
-        <SectionCard title="Realtime Phone Authentication" subtitle="Secure your account with live OTP">
+        <SectionCard
+          title="Realtime phone authentication"
+          subtitle="Secure your account with live OTP"
+          accentLabel={otpStatus === 'verified' ? 'Verified' : 'Action'}
+        >
           <InfoRow label="Linked Mobile" value={formattedPhone} />
-          <InfoRow
-            label="Verification Status"
-            value={otpStatus === 'verified' ? 'Verified via Twilio' : 'Not linked yet'}
-          />
-          {lastVerifiedAt ? (
-            <InfoRow label="Last Verified" value={new Date(lastVerifiedAt).toLocaleString()} />
-          ) : null}
+          <InfoRow label="Verification Status" value={otpStatus === 'verified' ? 'Verified via Twilio' : 'Not linked yet'} />
+          {lastVerifiedAt ? <InfoRow label="Last Verified" value={new Date(lastVerifiedAt).toLocaleString()} /> : null}
           <View style={styles.rowGap}>
             <AppButton
               label={otpStatus === 'codeSent' ? 'Resend OTP' : 'Send OTP'}
@@ -164,37 +193,56 @@ export const BeneficiaryProfileScreen = () => {
           ) : null}
         </SectionCard>
 
-        <SectionCard title="Loan Information" subtitle="Linked PMEGP application">
+        <SectionCard title="Loan information" subtitle="Linked PMEGP application" accentLabel="Linked">
           {loanInfo.map((item) => (
             <InfoRow key={item.label} label={item.label} value={item.value} />
           ))}
           <View style={styles.rowGap}>
             <Chip label="Verified" tone="success" />
-            <Chip label="Auto-sync Enabled" tone="primary" />
+            <Chip label="Auto-sync" tone="secondary" />
           </View>
         </SectionCard>
 
-        <SectionCard title="Upload Status & AI Results" subtitle="Last sync snapshot">
+        <SectionCard title="Upload status & AI results" subtitle="Last sync snapshot" accentLabel="Sync">
           <View style={[styles.rowGap, { alignItems: 'center' }]}
             accessibilityRole="summary"
           >
             <AppIcon name="cloud-sync" size={20} color="primary" />
             <AppText variant="bodyMedium" color="text">
-              2 pending uploads . Last sync 10:12 AM
+              2 pending uploads · Last sync 10:12 AM
             </AppText>
           </View>
           <View style={[styles.rowGap, { marginTop: theme.spacing.sm }]}>
             <Chip label="AI Confidence 93%" tone="info" />
             <Chip label="Geo-tag OK" tone="success" />
-            <Chip label="Blur Check Passed" tone="secondary" />
+            <Chip label="Blur check passed" tone="secondary" />
           </View>
-          <AppButton label="View Upload Queue" variant="outline" icon="playlist-check" style={{ marginTop: theme.spacing.md }} />
+          <AppButton label="View upload queue" variant="outline" icon="playlist-check" />
         </SectionCard>
 
-        <SectionCard title="Rewards" subtitle="Stay on the leaderboard">
+        <SectionCard title="Language & accessibility" subtitle="Make the app comfortable">
+          <AppText variant="labelMedium" color="muted">
+            Preferred language
+          </AppText>
+          <View style={[styles.rowGap, { marginBottom: theme.spacing.sm }]}>
+            {languageOptions.map((option) => (
+              <Chip
+                key={option}
+                label={option}
+                tone={language === option ? 'primary' : 'muted'}
+                backgroundColor={language === option ? theme.colors.primaryContainer : palette.mutedSurface}
+                onPress={() => setLanguage(option)}
+              />
+            ))}
+          </View>
+          <ToggleRow label="High contrast text" active={highContrast} onToggle={() => setHighContrast((prev) => !prev)} />
+          <ToggleRow label="Voice prompts" active={voicePrompts} onToggle={() => setVoicePrompts((prev) => !prev)} />
+        </SectionCard>
+
+        <SectionCard title="Rewards & progress" subtitle="Stay on the leaderboard">
           <View style={styles.statsGrid}>
             {rewardStats.map((stat) => (
-              <View key={stat.label} style={[styles.statCard, { backgroundColor: theme.colors.surfaceVariant }]}
+              <View key={stat.label} style={[styles.statCard, { borderColor: palette.border, backgroundColor: palette.surface }]}
                 accessibilityRole="summary"
               >
                 <AppText variant="headlineMedium" color="primary">
@@ -206,52 +254,21 @@ export const BeneficiaryProfileScreen = () => {
               </View>
             ))}
           </View>
-          <AppButton label="Redeem Points" icon="gift" style={{ marginTop: theme.spacing.md }} />
+          <AppButton label="Redeem points" icon="gift" variant="secondary" />
         </SectionCard>
 
-        <SectionCard title="Language & Accessibility" subtitle="Make the app comfortable">
-          <AppText variant="labelMedium" color="muted">
-            Preferred Language
-          </AppText>
-          <View style={[styles.rowGap, { marginBottom: theme.spacing.sm }]}>
-            {languageOptions.map((option) => (
-              <Chip
-                key={option}
-                label={option}
-                tone={language === option ? 'primary' : 'muted'}
-                backgroundColor={language === option ? theme.colors.primaryContainer : theme.colors.surface}
-                onPress={() => setLanguage(option)}
-              />
-            ))}
-          </View>
-          <ToggleRow
-            label="High contrast text"
-            active={highContrast}
-            onToggle={() => setHighContrast((prev) => !prev)}
-          />
-          <ToggleRow
-            label="Voice prompts"
-            active={voicePrompts}
-            onToggle={() => setVoicePrompts((prev) => !prev)}
-          />
-        </SectionCard>
-
-        <SectionCard title="Help & Support" subtitle="Reach us anytime">
+        <SectionCard title="Help & support" subtitle="Reach us anytime">
           <View style={styles.supportRow}>
-            <AppButton label="Call Support" variant="outline" icon="phone" />
+            <AppButton label="Call support" variant="outline" icon="phone" />
             <AppButton label="FAQs" variant="outline" icon="book-open-page-variant" />
             <AppButton label="Chatbot" variant="outline" icon="robot" />
           </View>
         </SectionCard>
 
-        <SectionCard title="App Settings" subtitle="Control notifications & privacy">
-          <ToggleRow
-            label="Notifications"
-            active={notifications}
-            onToggle={() => setNotifications((prev) => !prev)}
-          />
-          <ToggleRow label="Biometric Login" active onToggle={() => undefined} />
-          <AppButton label="Data & Privacy" variant="ghost" icon="shield-key" style={{ alignSelf: 'flex-start' }} />
+        <SectionCard title="App settings" subtitle="Control notifications & privacy">
+          <ToggleRow label="Notifications" active={notifications} onToggle={() => setNotifications((prev) => !prev)} />
+          <ToggleRow label="Biometric login" active onToggle={() => undefined} />
+          <AppButton label="Data & privacy" variant="ghost" icon="shield-key" style={{ alignSelf: 'flex-start' }} />
         </SectionCard>
 
         <AppButton label="Logout" tone="error" icon="logout" variant="outline" onPress={handleLogout} />
@@ -260,60 +277,12 @@ export const BeneficiaryProfileScreen = () => {
   );
 };
 
-const ProfileHeader = ({ name, village }: { name: string; village: string }) => {
-  const theme = useAppTheme();
-  return (
-    <LinearGradient
-      colors={[theme.colors.gradientStart, theme.colors.gradientEnd]}
-      start={{ x: 0, y: 0 }}
-      end={{ x: 1, y: 1 }}
-      style={[styles.headerCard, { borderRadius: theme.radii.lg }]}
-    >
-      <AppText variant="labelMedium" color="surface">
-        Profile
-      </AppText>
-      <AppText variant="displayMedium" color="surface" weight="600">
-        {name}
-      </AppText>
-      <AppText variant="bodyMedium" color="surface">
-        {village}
-      </AppText>
-      <AppButton label="Update Photo" variant="ghost" icon="camera" style={{ marginTop: theme.spacing.sm }} />
-    </LinearGradient>
-  );
-};
-
-const SectionCard = ({ title, subtitle, children }: { title: string; subtitle: string; children: React.ReactNode }) => {
-  const theme = useAppTheme();
-  return (
-    <LinearGradient
-      colors={[theme.colors.gradientStart, theme.colors.gradientEnd]}
-      style={[styles.sectionShell, { borderRadius: theme.radii.lg + 4 }]}
-    >
-      <View style={[styles.sectionInner, { borderRadius: theme.radii.lg, backgroundColor: theme.colors.card }]}
-        accessible
-        accessibilityRole="summary"
-      >
-        <AppText variant="titleMedium" color="text">
-          {title}
-        </AppText>
-        <AppText variant="bodySmall" color="muted">
-          {subtitle}
-        </AppText>
-        <View style={{ gap: theme.spacing.sm }}>{children}</View>
-      </View>
-    </LinearGradient>
-  );
-};
-
-const InfoRow = ({ label, value }: { label: string; value: string }) => (
-  <View style={styles.infoRow}>
-    <AppText variant="labelSmall" color="muted">
-      {label}
-    </AppText>
-    <AppText variant="bodyMedium" color="text">
-      {value}
-    </AppText>
+const HeroMetric = ({ label, value, palette }: { label: string; value: string; palette: ReturnType<typeof useBeneficiaryPalette> }) => (
+  <View style={[styles.metricCard, { borderColor: palette.border, backgroundColor: palette.mutedSurface }]}
+    accessibilityLabel={label}
+  >
+    <Text style={[styles.metricLabel, { color: palette.subtext }]}>{label}</Text>
+    <Text style={[styles.metricValue, { color: palette.text }]}>{value}</Text>
   </View>
 );
 
@@ -347,23 +316,53 @@ const formatDisplayPhone = (value?: string) => {
 };
 
 const styles = StyleSheet.create({
+  safeArea: {
+    flex: 1,
+  },
   content: {
-    padding: 16,
+    paddingHorizontal: 20,
+    paddingTop: 20,
+    gap: 18,
+  },
+  heroHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
     gap: 16,
   },
-  headerCard: {
-    padding: 20,
-    gap: 6,
+  eyebrow: {
+    fontSize: 12,
+    letterSpacing: 0.8,
+    textTransform: 'uppercase',
   },
-  sectionShell: {
-    padding: 1.5,
+  heroTitle: {
+    fontSize: 26,
+    fontWeight: '700',
   },
-  sectionInner: {
-    padding: 16,
+  heroSubtitle: {
+    fontSize: 14,
+    marginTop: 4,
+  },
+  heroBody: {
+    fontSize: 14,
+    lineHeight: 20,
+  },
+  heroPills: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
     gap: 8,
   },
-  infoRow: {
-    gap: 2,
+  heroMetrics: {
+    flexDirection: 'row',
+    gap: 12,
+  },
+  heroActions: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 12,
+  },
+  heroButton: {
+    flexGrow: 1,
+    minWidth: 140,
   },
   rowGap: {
     flexDirection: 'row',
@@ -376,9 +375,10 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   statCard: {
-    flexBasis: '30%',
-    padding: 12,
-    borderRadius: 12,
+    flexBasis: '48%',
+    padding: 16,
+    borderRadius: 16,
+    borderWidth: 1,
     gap: 4,
   },
   supportRow: {
@@ -389,5 +389,21 @@ const styles = StyleSheet.create({
   toggleRow: {
     alignItems: 'center',
     justifyContent: 'space-between',
+  },
+  metricCard: {
+    flex: 1,
+    borderRadius: 16,
+    borderWidth: 1,
+    padding: 12,
+    gap: 4,
+  },
+  metricLabel: {
+    fontSize: 12,
+    letterSpacing: 0.6,
+    textTransform: 'uppercase',
+  },
+  metricValue: {
+    fontSize: 18,
+    fontWeight: '600',
   },
 });

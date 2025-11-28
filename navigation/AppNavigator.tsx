@@ -100,7 +100,7 @@ const BeneficiaryNavigator = () => {
         <BeneficiaryDrawerContent
           {...props}
           beneficiaryName={profile?.name ?? 'Beneficiary'}
-          beneficiaryVillage={profile?.village}
+          beneficiaryVillage={profile?.role === 'beneficiary' ? profile.village : undefined}
           onLogout={logout}
         />
       )}

@@ -26,7 +26,7 @@ const toLoanModel = (record: BeneficiaryRecord): BeneficiaryLoan => ({
   status: 'sanctioned',
 });
 
-const deriveAnalytics = (record?: BeneficiaryRecord): AnalyticsSummary | undefined => {
+const deriveAnalytics = (record?: BeneficiaryRecord | null): AnalyticsSummary | undefined => {
   if (!record) {
     return undefined;
   }
