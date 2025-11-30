@@ -1,5 +1,6 @@
 {
   "expo": {
+<<<<<<< HEAD
     "name": "SetuJS",
     "slug": "SetuJS",
     "version": "1.0.0",
@@ -12,10 +13,21 @@
       "resizeMode": "contain",
       "backgroundColor": "#ffffff"
     },
+=======
+    "name": "NIDHISETU",
+    "slug": "NIDHISETU",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/images/icon.png",
+    "scheme": "nidhisetu",
+    "userInterfaceStyle": "automatic",
+    "newArchEnabled": true,
+>>>>>>> 064be9929716ece6bad83adce10a71d23ea7fa1a
     "ios": {
       "supportsTablet": true
     },
     "android": {
+<<<<<<< HEAD
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#ffffff"
@@ -24,6 +36,50 @@
     },
     "web": {
       "favicon": "./assets/favicon.png"
+=======
+      "googleServicesFile": "./google-services.json",
+      "package": "com.deepankar.nidhisetu",
+      "adaptiveIcon": {
+        "backgroundColor": "#021A2F",
+        "foregroundImage": "./assets/images/icon.png"
+      },
+      "edgeToEdgeEnabled": true,
+      "predictiveBackGestureEnabled": false
+    },
+    "plugins": [
+      "expo-router",
+      [
+        "expo-splash-screen",
+        {
+          "image": "./assets/images/icon.png",
+          "imageWidth": 200,
+          "resizeMode": "contain",
+          "backgroundColor": "#021A2F",
+          "dark": {
+            "backgroundColor": "#020D1E"
+          }
+        }
+      ],
+      "@react-native-firebase/app",
+      "@react-native-firebase/auth"
+    ],
+    "experiments": {
+      "typedRoutes": true,
+      "reactCompiler": true
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "909c86ec-c36c-484b-8fd1-4cf65df55a71"
+      }
+    },
+    "owner": "deepankar68",
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
+    "updates": {
+      "url": "https://u.expo.dev/909c86ec-c36c-484b-8fd1-4cf65df55a71"
+>>>>>>> 064be9929716ece6bad83adce10a71d23ea7fa1a
     }
   }
 }

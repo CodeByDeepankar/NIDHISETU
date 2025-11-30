@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "811500538636",
+    "project_id": "nidhisetu-app",
+    "storage_bucket": "nidhisetu-app.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:811500538636:android:d7eb4de7e2b2866a17d729",
+        "android_client_info": {
+          "package_name": "com.deepankar.nidhisetu"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCjsIX0kwmYjhRTaN6pTRFLlF9AhYyJ_BU"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
