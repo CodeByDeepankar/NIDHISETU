@@ -28,7 +28,12 @@ export const FormSectionCard = ({ title, subtitle, children, icon }: FormSection
           )}
         </View>
       </View>
-      <View style={[styles.divider, { backgroundColor: theme.colors.outline, opacity: 0.1 }]} />
+      <View
+        style={[
+          styles.divider,
+          { backgroundColor: theme.colors.gradientEnd },
+        ]}
+      />
       <View style={styles.content}>{children}</View>
     </View>
   );

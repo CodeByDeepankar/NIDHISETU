@@ -3,11 +3,11 @@ import {
     createDrawerNavigator,
     DrawerContentComponentProps,
     DrawerContentScrollView,
-    DrawerItem,
     DrawerItemList
 } from '@react-navigation/drawer';
 import { DefaultTheme, NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useMemo } from 'react';
 import { Alert, StyleSheet, TouchableOpacity, View } from 'react-native';
 
@@ -18,18 +18,18 @@ import { MobileInputScreen } from '@/screens/auth/mobile-input-screen';
 import { OnboardingScreen } from '@/screens/auth/onboarding-screen';
 import { OtpVerificationScreen } from '@/screens/auth/otp-verification-screen';
 import { WelcomeScreen } from '@/screens/auth/welcome-screen';
+import { ContactOfficerScreen } from '@/screens/beneficiary/contact-officer-screen';
 import { BeneficiaryDashboardScreen } from '@/screens/beneficiary/dashboard-screen';
+import { EditProfileScreen } from '@/screens/beneficiary/edit-profile-screen';
+import { EligibilityPredictionScreen } from '@/screens/beneficiary/eligibility-prediction-screen';
+import { EmiCalculatorScreen } from '@/screens/beneficiary/emi-calculator-screen';
 import { BeneficiaryLoanAssistantScreen } from '@/screens/beneficiary/loan-assistant-screen';
 import { LoanDetailsScreen } from '@/screens/beneficiary/loan-details-screen';
 import { LoanEvidenceCameraScreen } from '@/screens/beneficiary/loan-evidence-camera-screen';
+import { NotificationsScreen } from '@/screens/beneficiary/notifications-screen';
 import { PreviousSubmissionsScreen } from '@/screens/beneficiary/previous-submissions-screen';
 import { BeneficiaryProfileScreen } from '@/screens/beneficiary/profile-screen';
-import { EditProfileScreen } from '@/screens/beneficiary/edit-profile-screen';
-import { EmiCalculatorScreen } from '@/screens/beneficiary/emi-calculator-screen';
 import { SubsidyCalculatorScreen } from '@/screens/beneficiary/subsidy-calculator-screen';
-import { EligibilityPredictionScreen } from '@/screens/beneficiary/eligibility-prediction-screen';
-import { NotificationsScreen } from '@/screens/beneficiary/notifications-screen';
-import { ContactOfficerScreen } from '@/screens/beneficiary/contact-officer-screen';
 import { SyncStatusScreen } from '@/screens/beneficiary/sync-status-screen';
 import { UploadEvidenceScreen } from '@/screens/beneficiary/upload-evidence-screen';
 import { BeneficiaryFormScreen } from '@/screens/officer/beneficiary-form-screen';
@@ -292,9 +292,10 @@ const OfficerNavigator = () => {
       screenOptions={({ route }) => ({
         headerStyle: { backgroundColor: theme.colors.card },
         headerTintColor: theme.colors.text,
-        drawerActiveTintColor: theme.colors.primary,
-        drawerInactiveTintColor: theme.colors.muted,
-        drawerStyle: { backgroundColor: theme.colors.card },
+        drawerActiveTintColor: '#FFFFFF',
+        drawerInactiveTintColor: 'rgba(255, 255, 255, 0.7)',
+        drawerActiveBackgroundColor: 'transparent',
+        drawerStyle: { backgroundColor: 'transparent', width: '82%' },
         sceneContainerStyle: { backgroundColor: theme.colors.background },
         drawerIcon: ({ color, size }) => (
           <AppIcon
@@ -430,57 +431,185 @@ const OfficerDrawerContent = ({ officerName, officerMobile, onLogout, ...props }
     ]);
   };
 
+  const visibleRoutes = props.state.routes.filter((route) => {
+    const drawerItemStyle = props.descriptors[route.key]?.options?.drawerItemStyle;
+    const flattened = drawerItemStyle ? StyleSheet.flatten(drawerItemStyle) : undefined;
+    return flattened?.display !== 'none';
+  });
+
   return (
-    <DrawerContentScrollView {...props} contentContainerStyle={drawerStyles.content}>
-      <View style={[drawerStyles.header, { backgroundColor: theme.colors.surface }]}>
-        <AppIcon name="shield-account" size={36} color="primary" />
-        <View style={{ flex: 1 }}>
-          <AppText variant="titleMedium" color="text">
-            {officerName}
-          </AppText>
-          {officerMobile ? (
-            <AppText variant="labelSmall" color="muted">
-              {officerMobile}
-            </AppText>
-          ) : null}
+    <LinearGradient
+      colors={[theme.colors.gradientStart, theme.colors.gradientEnd]}
+      style={drawerStyles.gradientBackground}
+    >
+      <DrawerContentScrollView
+        {...props}
+        contentContainerStyle={drawerStyles.scrollContent}
+        showsVerticalScrollIndicator={false}
+      >
+        <View style={drawerStyles.header}>
+          <View style={drawerStyles.avatar}>
+            <AppIcon name="shield-account" size={28} color="#FFFFFF" />
+          </View>
+          <View style={drawerStyles.headerTextWrap}>
+            <AppText style={drawerStyles.headerName}>{officerName}</AppText>
+            {officerMobile ? <AppText style={drawerStyles.headerMeta}>{officerMobile}</AppText> : null}
+            <View style={drawerStyles.badge}>
+              <AppText style={drawerStyles.badgeText}>Field Officer</AppText>
+            </View>
+          </View>
         </View>
-      </View>
-      <View style={drawerStyles.listWrapper}>
-        <DrawerItemList {...props} />
-      </View>
-      <DrawerItem
-        label="Logout"
-        icon={({ color, size }) => <AppIcon name="logout" size={size} color={color} />}
-        onPress={handleLogout}
-      />
-    </DrawerContentScrollView>
+
+        <View style={drawerStyles.menuSection}>
+          {visibleRoutes.map((route) => {
+            const originalIndex = props.state.routes.findIndex((item) => item.key === route.key);
+            const focused = props.state.index === originalIndex;
+            const label = props.descriptors[route.key]?.options?.title ?? route.name;
+            const iconName = officerIconMap[route.name as keyof typeof officerIconMap] ?? 'folder';
+
+            return (
+              <TouchableOpacity
+                key={route.key}
+                onPress={() => props.navigation.navigate(route.name as never)}
+                style={[drawerStyles.menuItem, focused && drawerStyles.menuItemActive]}
+                activeOpacity={0.9}
+              >
+                <View style={[drawerStyles.menuIcon, focused && drawerStyles.menuIconActive]}>
+                  <AppIcon
+                    name={iconName}
+                    size={20}
+                    color={focused ? theme.colors.gradientStart : 'rgba(255, 255, 255, 0.9)'}
+                  />
+                </View>
+                <AppText style={[drawerStyles.menuLabel, focused && drawerStyles.menuLabelActive]}>{label}</AppText>
+              </TouchableOpacity>
+            );
+          })}
+        </View>
+
+        <TouchableOpacity onPress={handleLogout} style={drawerStyles.logoutButton} activeOpacity={0.9}>
+          <View style={drawerStyles.logoutIcon}>
+            <AppIcon name="power" size={22} color={theme.colors.gradientStart} />
+          </View>
+          <AppText style={drawerStyles.logoutText}>Logout</AppText>
+          <AppIcon name="chevron-right" size={22} color="#FFFFFF" />
+        </TouchableOpacity>
+      </DrawerContentScrollView>
+    </LinearGradient>
   );
 };
 
 const drawerStyles = StyleSheet.create({
-  content: {
+  gradientBackground: {
     flex: 1,
-    paddingBottom: 12,
   },
-  menuButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 12,
-    borderWidth: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginLeft: 8,
+  scrollContent: {
+    flexGrow: 1,
+    paddingTop: 56,
+    paddingBottom: 32,
   },
   header: {
-    paddingHorizontal: 16,
-    paddingVertical: 24,
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
+    paddingHorizontal: 24,
+    marginBottom: 24,
   },
-  listWrapper: {
-    flexGrow: 1,
-    paddingTop: 8,
+  avatar: {
+    width: 56,
+    height: 56,
+    borderRadius: 20,
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 16,
+  },
+  headerTextWrap: {
+    flex: 1,
+  },
+  headerName: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#FFFFFF',
+  },
+  headerMeta: {
+    marginTop: 2,
+    color: 'rgba(255, 255, 255, 0.85)',
+  },
+  badge: {
+    marginTop: 10,
+    alignSelf: 'flex-start',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 999,
+    backgroundColor: 'rgba(255, 255, 255, 0.18)',
+  },
+  badgeText: {
+    color: '#FFFFFF',
+    fontSize: 12,
+    fontWeight: '600',
+    letterSpacing: 0.5,
+  },
+  menuSection: {
+    marginHorizontal: 16,
+    borderRadius: 22,
+    paddingHorizontal: 6,
+    paddingVertical: 6,
+    backgroundColor: 'rgba(255, 255, 255, 0.14)',
+  },
+  menuItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 10,
+    paddingVertical: 12,
+    borderRadius: 16,
+  },
+  menuItemActive: {
+    backgroundColor: '#FFFFFF',
+  },
+  menuIcon: {
+    width: 36,
+    height: 36,
+    borderRadius: 14,
+    backgroundColor: 'rgba(255, 255, 255, 0.18)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  menuIconActive: {
+    backgroundColor: 'rgba(0, 0, 0, 0.06)',
+  },
+  menuLabel: {
+    marginLeft: 12,
+    fontSize: 16,
+    color: 'rgba(255, 255, 255, 0.9)',
+    fontWeight: '500',
+  },
+  menuLabelActive: {
+    color: '#0A3D3D',
+  },
+  logoutButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginHorizontal: 16,
+    marginTop: 24,
+    borderRadius: 18,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    backgroundColor: 'rgba(255, 255, 255, 0.18)',
+  },
+  logoutIcon: {
+    width: 38,
+    height: 38,
+    borderRadius: 14,
+    backgroundColor: '#FFFFFF',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 12,
+  },
+  logoutText: {
+    flex: 1,
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#FFFFFF',
   },
 });
 

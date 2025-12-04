@@ -44,6 +44,7 @@ export const InputField = ({
   const [isSecure, setSecure] = useState(Boolean(secureTextEntry));
   const hasError = Boolean(errorText);
   const resolvedBg = typeof backgroundColor === 'string' ? backgroundColor : theme.colors[backgroundColor];
+  const outlineColor = hasError ? theme.colors.error : theme.colors.gradientEnd;
 
   return (
     <View style={[styles.wrapper, containerStyle]}>
@@ -59,9 +60,9 @@ export const InputField = ({
             minHeight: theme.components.input.height,
             borderRadius: theme.components.input.borderRadius,
             paddingHorizontal: theme.spacing.md,
-            backgroundColor: resolvedBg,
-            borderWidth: hasError ? 1 : 0,
-            borderColor: hasError ? theme.colors.error : 'transparent',
+            backgroundColor: hasError ? resolvedBg : theme.colors.surface,
+            borderWidth: 1,
+            borderColor: outlineColor,
           },
         ]}
       >
