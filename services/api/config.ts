@@ -1,6 +1,6 @@
 import Constants from 'expo-constants';
 
-const FALLBACK_BASE_URL = 'http://192.168.203.142:3000';
+const FALLBACK_BASE_URL = 'http://192.168.202.142:3000';
 
 type ExtraEnv = {
   API_BASE_URL?: string;
