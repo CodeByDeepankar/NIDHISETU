@@ -23,6 +23,8 @@ import { useAuthStore } from '@/state/authStore';
 import { governmentUpdatesClient, type GovernmentUpdate } from '@/services/ai/governmentUpdates';
 import type { BeneficiaryDrawerParamList } from '@/navigation/types';
 import { useTheme } from '@/hooks/use-theme';
+import { useAppTheme } from '@/hooks/use-app-theme';
+import type { AppTheme } from '@/constants/theme';
 
 type BeneficiaryNavigation = DrawerNavigationProp<BeneficiaryDrawerParamList>;
 
@@ -95,6 +97,8 @@ const grievanceItems = [
 export const BeneficiaryDashboardScreen = () => {
     const navigation = useNavigation<BeneficiaryNavigation>();
     const { mode, toggleTheme } = useTheme();
+    const theme = useAppTheme();
+    const styles = useMemo(() => createStyles(theme), [theme]);
     const profile = useAuthStore((state) => state.profile);
     const t = useT();
     const { locale, setLocale } = useAppLocale();
@@ -120,8 +124,8 @@ export const BeneficiaryDashboardScreen = () => {
     const [isModalVisible, setIsModalVisible] = useState(false);
     const [languageModalVisible, setLanguageModalVisible] = useState(false);
 
-    const iconColor = mode === 'dark' ? '#F9FAFB' : '#333';
-    const iconBackground = mode === 'dark' ? '#1F2937' : '#FFFFFF';
+    const iconColor = theme.colors.icon;
+    const iconBackground = theme.colors.surfaceVariant;
 
     const cardWidth = useMemo(() => {
         const width = Dimensions.get('window').width;
@@ -209,7 +213,7 @@ export const BeneficiaryDashboardScreen = () => {
         <View style={styles.container}>
             <View style={styles.header}>
                 <TouchableOpacity onPress={() => navigation.dispatch(DrawerActions.openDrawer())}>
-                    <AppIcon name="menu" size={28} color="#333" />
+                    <AppIcon name="menu" size={28} color={theme.colors.icon} />
                 </TouchableOpacity>
                 <View style={styles.userInfo}>
                     <Image
@@ -268,7 +272,11 @@ export const BeneficiaryDashboardScreen = () => {
                     <View style={styles.sectionHeader}>
                         <AppText style={styles.sectionTitle}>{t('Government Updates')}</AppText>
                         <TouchableOpacity onPress={() => fetchGovernmentUpdates()} disabled={updatesLoading} style={styles.refreshButton}>
-                            <AppIcon name="refresh" size={18} color={updatesLoading ? '#A1A1AA' : '#2563EB'} />
+                                <AppIcon
+                                    name="refresh"
+                                    size={18}
+                                    color={updatesLoading ? theme.colors.subtext : theme.colors.primary}
+                                />
                             <AppText style={[styles.refreshText, updatesLoading && styles.refreshDisabled]}>
                                 {updatesLoading ? t('Refreshing…') : t('Refresh')}
                             </AppText>
@@ -294,7 +302,7 @@ export const BeneficiaryDashboardScreen = () => {
                         ))}
                         {updatesLoading && (
                             <View style={[styles.horizontalCardWrapper, styles.loadingCard]}>
-                                <ActivityIndicator color="#2563EB" />
+                                <ActivityIndicator color={theme.colors.primary} />
                             </View>
                         )}
                     </ScrollView>
@@ -355,7 +363,7 @@ export const BeneficiaryDashboardScreen = () => {
                                 <View style={styles.modalHeader}>
                                     <AppText style={styles.modalTitle}>{t('Government Update')}</AppText>
                                     <TouchableOpacity onPress={closeModal}>
-                                        <AppIcon name="close" size={22} color="#111827" />
+                                        <AppIcon name="close" size={22} color={theme.colors.icon} />
                                     </TouchableOpacity>
                                 </View>
                                 {selectedUpdate && (
@@ -408,233 +416,238 @@ export const BeneficiaryDashboardScreen = () => {
         </View>
     );
 };
-
-const styles = StyleSheet.create({
-    container: {
-        flex: 1,
-        backgroundColor: '#F3F4F6',
-        paddingTop: 40,
-    },
-    header: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        paddingHorizontal: 20,
-        paddingBottom: 20,
-        gap: 12,
-    },
-    userInfo: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: 10,
-        flex: 1,
-        marginLeft: 10,
-    },
-    userDetails: {
-        flex: 1,
-    },
-    avatar: {
-        width: 40,
-        height: 40,
-        borderRadius: 20,
-    },
-    userName: {
-        fontWeight: 'bold',
-        fontSize: 16,
-        flexShrink: 1,
-    },
-    greeting: {
-        fontSize: 12,
-        color: '#666',
-        flexShrink: 1,
-    },
-    badge: {
-        position: 'absolute',
-        top: 0,
-        right: 0,
-        width: 8,
-        height: 8,
-        borderRadius: 4,
-        backgroundColor: 'red',
-    },
-    headerActions: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: 10,
-        flexShrink: 0,
-    },
-    iconButton: {
-        padding: 8,
-        borderRadius: 12,
-        backgroundColor: '#FFFFFF',
-        position: 'relative',
-        elevation: 1,
-    },
-    scrollContent: {
-        paddingHorizontal: 20,
-        paddingBottom: 100,
-    },
-    grid: {
-        flexDirection: 'row',
-        flexWrap: 'wrap',
-        justifyContent: 'space-between',
-        gap: 10,
-        marginBottom: 20,
-    },
-    card: {
-        width: '48%',
-        backgroundColor: '#fff',
-        borderRadius: 16,
-        padding: 16,
-        alignItems: 'center',
-        elevation: 2,
-        marginBottom: 10,
-    },
-    iconContainer: {
-        marginBottom: 10,
-    },
-    cardTitle: {
-        fontSize: 12,
-        fontWeight: 'bold',
-        textAlign: 'center',
-        marginBottom: 4,
-    },
-    viewStatus: {
-        fontSize: 10,
-        color: '#999',
-    },
-    section: {
-        marginBottom: 24,
-    },
-    sectionTitle: {
-        fontSize: 18,
-        fontWeight: 'bold',
-        marginBottom: 12,
-        color: '#1F2937',
-    },
-    sectionHeader: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        marginBottom: 4,
-    },
-    refreshButton: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: 4,
-    },
-    refreshText: {
-        fontSize: 12,
-        fontWeight: '600',
-        color: '#2563EB',
-    },
-    refreshDisabled: {
-        color: '#A1A1AA',
-    },
-    statusText: {
-        fontSize: 12,
-        color: '#6B7280',
-        marginBottom: 8,
-    },
-    errorText: {
-        fontSize: 12,
-        color: '#DC2626',
-        marginBottom: 8,
-    },
-    horizontalScroll: {
-        paddingRight: 20,
-    },
-    horizontalCardWrapper: {
-        width: 280,
-        marginRight: 16,
-    },
-    loadingCard: {
-        alignItems: 'center',
-        justifyContent: 'center',
-    },
-    verticalList: {
-        gap: 0,
-    },
-    modalOverlay: {
-        flex: 1,
-        backgroundColor: 'rgba(0,0,0,0.4)',
-        justifyContent: 'center',
-        padding: 24,
-    },
-    modalContent: {
-        backgroundColor: '#FFFFFF',
-        borderRadius: 20,
-        padding: 20,
-        shadowColor: '#000',
-        shadowOpacity: 0.2,
-        shadowRadius: 10,
-        elevation: 6,
-    },
-    modalHeader: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        marginBottom: 12,
-    },
-    modalTitle: {
-        fontSize: 16,
-        fontWeight: '600',
-        color: '#1F2937',
-    },
-    modalImage: {
-        width: '100%',
-        height: 160,
-        borderRadius: 16,
-        marginBottom: 16,
-    },
-    modalUpdateTitle: {
-        fontSize: 18,
-        fontWeight: 'bold',
-        color: '#111827',
-        marginBottom: 6,
-    },
-    modalMeta: {
-        fontSize: 12,
-        color: '#6B7280',
-        marginBottom: 12,
-    },
-    modalDescription: {
-        fontSize: 14,
-        color: '#1F2937',
-        lineHeight: 20,
-        marginBottom: 20,
-    },
-    modalButton: {
-        backgroundColor: '#2563EB',
-        borderRadius: 12,
-    },
-    modalButtonLabel: {
-        textTransform: 'none',
-        fontWeight: '600',
-    },
-    languageModalContent: {
-        backgroundColor: '#FFFFFF',
-        borderRadius: 16,
-        padding: 20,
-        gap: 12,
-    },
-    languageModalTitle: {
-        fontSize: 16,
-        fontWeight: '600',
-        color: '#1F2937',
-    },
-    languageOption: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        paddingVertical: 12,
-        borderBottomWidth: StyleSheet.hairlineWidth,
-        borderColor: '#E5E7EB',
-    },
-    languageOptionActive: {
-        borderColor: '#A855F7',
-    },
-    languageLabel: {
-        fontSize: 14,
-        color: '#1F2937',
-    },
-});
+const createStyles = (theme: AppTheme) =>
+    StyleSheet.create({
+        container: {
+            flex: 1,
+            backgroundColor: theme.colors.background,
+            paddingTop: 40,
+        },
+        header: {
+            flexDirection: 'row',
+            alignItems: 'center',
+            paddingHorizontal: 20,
+            paddingBottom: 20,
+            gap: 12,
+        },
+        userInfo: {
+            flexDirection: 'row',
+            alignItems: 'center',
+            gap: 10,
+            flex: 1,
+            marginLeft: 10,
+        },
+        userDetails: {
+            flex: 1,
+        },
+        avatar: {
+            width: 40,
+            height: 40,
+            borderRadius: 20,
+        },
+        userName: {
+            fontWeight: 'bold',
+            fontSize: 16,
+            flexShrink: 1,
+        },
+        greeting: {
+            fontSize: 12,
+            color: theme.colors.subtext,
+            flexShrink: 1,
+        },
+        badge: {
+            position: 'absolute',
+            top: 0,
+            right: 0,
+            width: 8,
+            height: 8,
+            borderRadius: 4,
+            backgroundColor: theme.colors.error,
+        },
+        headerActions: {
+            flexDirection: 'row',
+            alignItems: 'center',
+            gap: 10,
+            flexShrink: 0,
+        },
+        iconButton: {
+            padding: 8,
+            borderRadius: 12,
+            backgroundColor: theme.colors.surfaceVariant,
+            position: 'relative',
+            elevation: 1,
+        },
+        scrollContent: {
+            paddingHorizontal: 20,
+            paddingBottom: 100,
+        },
+        grid: {
+            flexDirection: 'row',
+            flexWrap: 'wrap',
+            justifyContent: 'space-between',
+            gap: 10,
+            marginBottom: 20,
+        },
+        card: {
+            width: '48%',
+            backgroundColor: theme.colors.surfaceVariant,
+            borderRadius: 16,
+            padding: 16,
+            alignItems: 'center',
+            elevation: 2,
+            marginBottom: 10,
+            borderWidth: StyleSheet.hairlineWidth,
+            borderColor: theme.colors.border,
+        },
+        iconContainer: {
+            marginBottom: 10,
+        },
+        cardTitle: {
+            fontSize: 12,
+            fontWeight: 'bold',
+            textAlign: 'center',
+            marginBottom: 4,
+            color: theme.colors.text,
+        },
+        viewStatus: {
+            fontSize: 10,
+            color: theme.colors.subtext,
+        },
+        section: {
+            marginBottom: 24,
+        },
+        sectionTitle: {
+            fontSize: 18,
+            fontWeight: 'bold',
+            marginBottom: 12,
+            color: theme.colors.text,
+        },
+        sectionHeader: {
+            flexDirection: 'row',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            marginBottom: 4,
+        },
+        refreshButton: {
+            flexDirection: 'row',
+            alignItems: 'center',
+            gap: 4,
+        },
+        refreshText: {
+            fontSize: 12,
+            fontWeight: '600',
+            color: theme.colors.primary,
+        },
+        refreshDisabled: {
+            color: theme.colors.subtext,
+        },
+        statusText: {
+            fontSize: 12,
+            color: theme.colors.subtext,
+            marginBottom: 8,
+        },
+        errorText: {
+            fontSize: 12,
+            color: theme.colors.error,
+            marginBottom: 8,
+        },
+        horizontalScroll: {
+            paddingRight: 20,
+        },
+        horizontalCardWrapper: {
+            width: 280,
+            marginRight: 16,
+        },
+        loadingCard: {
+            alignItems: 'center',
+            justifyContent: 'center',
+        },
+        verticalList: {
+            gap: 0,
+        },
+        modalOverlay: {
+            flex: 1,
+            backgroundColor: theme.colors.overlay,
+            justifyContent: 'center',
+            padding: 24,
+        },
+        modalContent: {
+            backgroundColor: theme.colors.surface,
+            borderRadius: 20,
+            padding: 20,
+            shadowColor: '#000',
+            shadowOpacity: 0.2,
+            shadowRadius: 10,
+            elevation: 6,
+            borderWidth: StyleSheet.hairlineWidth,
+            borderColor: theme.colors.border,
+        },
+        modalHeader: {
+            flexDirection: 'row',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            marginBottom: 12,
+        },
+        modalTitle: {
+            fontSize: 16,
+            fontWeight: '600',
+            color: theme.colors.text,
+        },
+        modalImage: {
+            width: '100%',
+            height: 160,
+            borderRadius: 16,
+            marginBottom: 16,
+        },
+        modalUpdateTitle: {
+            fontSize: 18,
+            fontWeight: 'bold',
+            color: theme.colors.text,
+            marginBottom: 6,
+        },
+        modalMeta: {
+            fontSize: 12,
+            color: theme.colors.subtext,
+            marginBottom: 12,
+        },
+        modalDescription: {
+            fontSize: 14,
+            color: theme.colors.text,
+            lineHeight: 20,
+            marginBottom: 20,
+        },
+        modalButton: {
+            backgroundColor: theme.colors.primary,
+            borderRadius: 12,
+        },
+        modalButtonLabel: {
+            textTransform: 'none',
+            fontWeight: '600',
+        },
+        languageModalContent: {
+            backgroundColor: theme.colors.surface,
+            borderRadius: 16,
+            padding: 20,
+            gap: 12,
+        },
+        languageModalTitle: {
+            fontSize: 16,
+            fontWeight: '600',
+            color: theme.colors.text,
+        },
+        languageOption: {
+            flexDirection: 'row',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            paddingVertical: 12,
+            borderBottomWidth: StyleSheet.hairlineWidth,
+            borderColor: theme.colors.border,
+        },
+        languageOptionActive: {
+            borderColor: theme.colors.primary,
+        },
+        languageLabel: {
+            fontSize: 14,
+            color: theme.colors.text,
+        },
+    });

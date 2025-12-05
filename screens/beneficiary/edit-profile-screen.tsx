@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { View, StyleSheet, ScrollView, TouchableOpacity, Alert, Image } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -10,12 +10,16 @@ import { AppText } from '@/components/atoms/app-text';
 import { AppButton } from '@/components/atoms/app-button';
 import { InputField } from '@/components/atoms/input-field';
 import { supabase } from '@/lib/supabaseClient';
+import { useAppTheme } from '@/hooks/use-app-theme';
+import type { AppTheme } from '@/constants/theme';
 
 export const EditProfileScreen = ({ navigation }: any) => {
   const profile = useAuthStore((state) => state.profile);
   const updateProfile = useAuthStore((state) => state.actions.updateProfile);
   const [loading, setLoading] = useState(false);
   const [imageUri, setImageUri] = useState<string | null>(profile?.avatarUrl || null);
+  const theme = useAppTheme();
+  const styles = useMemo(() => createStyles(theme), [theme]);
 
   const [formData, setFormData] = useState({
     name: profile?.name || '',
@@ -126,7 +130,7 @@ export const EditProfileScreen = ({ navigation }: any) => {
     <SafeAreaView style={styles.container} edges={['top']}>
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-          <Ionicons name="arrow-back" size={24} color="#333" />
+          <Ionicons name="arrow-back" size={24} color={theme.colors.icon} />
         </TouchableOpacity>
         <AppText style={styles.headerTitle}>Edit Profile</AppText>
         <View style={{ width: 40 }} /> 
@@ -140,7 +144,7 @@ export const EditProfileScreen = ({ navigation }: any) => {
                     style={styles.profileImage} 
                 />
                 <TouchableOpacity style={styles.cameraButton} onPress={handleImagePick}>
-                    <Ionicons name="camera" size={20} color="white" />
+                  <Ionicons name="camera" size={20} color={theme.colors.onPrimary} />
                 </TouchableOpacity>
             </View>
             <AppText style={styles.changePhotoText}>Change Profile Photo</AppText>
@@ -187,74 +191,78 @@ export const EditProfileScreen = ({ navigation }: any) => {
             label="Save Changes" 
             onPress={handleSave} 
             loading={loading}
+            tone="primary"
         />
       </View>
     </SafeAreaView>
   );
 };
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#fff',
-  },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: '#eee',
-  },
-  backButton: {
-    padding: 8,
-  },
-  headerTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#333',
-  },
-  content: {
-    padding: 20,
-  },
-  imageSection: {
-    alignItems: 'center',
-    marginBottom: 30,
-  },
-  imageContainer: {
-    position: 'relative',
-    marginBottom: 12,
-  },
-  profileImage: {
-    width: 100,
-    height: 100,
-    borderRadius: 50,
-    backgroundColor: '#f0f0f0',
-  },
-  cameraButton: {
-    position: 'absolute',
-    bottom: 0,
-    right: 0,
-    backgroundColor: '#008080',
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderWidth: 3,
-    borderColor: 'white',
-  },
-  changePhotoText: {
-    color: '#008080',
-    fontWeight: '500',
-  },
-  form: {
-    gap: 20,
-  },
-  footer: {
-    padding: 20,
-    borderTopWidth: 1,
-    borderTopColor: '#eee',
-  },
-});
+const createStyles = (theme: AppTheme) =>
+  StyleSheet.create({
+    container: {
+      flex: 1,
+      backgroundColor: theme.colors.background,
+    },
+    header: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      paddingHorizontal: 16,
+      paddingVertical: 12,
+      backgroundColor: theme.colors.surface,
+      borderBottomWidth: StyleSheet.hairlineWidth,
+      borderBottomColor: theme.colors.border,
+    },
+    backButton: {
+      padding: 8,
+    },
+    headerTitle: {
+      fontSize: 18,
+      fontWeight: '600',
+      color: theme.colors.text,
+    },
+    content: {
+      padding: 20,
+    },
+    imageSection: {
+      alignItems: 'center',
+      marginBottom: 30,
+    },
+    imageContainer: {
+      position: 'relative',
+      marginBottom: 12,
+    },
+    profileImage: {
+      width: 100,
+      height: 100,
+      borderRadius: 50,
+      backgroundColor: theme.colors.surfaceVariant,
+    },
+    cameraButton: {
+      position: 'absolute',
+      bottom: 0,
+      right: 0,
+      backgroundColor: theme.colors.primary,
+      width: 36,
+      height: 36,
+      borderRadius: 18,
+      justifyContent: 'center',
+      alignItems: 'center',
+      borderWidth: 3,
+      borderColor: theme.colors.surface,
+    },
+    changePhotoText: {
+      color: theme.colors.primary,
+      fontWeight: '500',
+    },
+    form: {
+      gap: 20,
+    },
+    footer: {
+      padding: 20,
+      borderTopWidth: StyleSheet.hairlineWidth,
+      borderTopColor: theme.colors.border,
+      backgroundColor: theme.colors.surface,
+    },
+  });

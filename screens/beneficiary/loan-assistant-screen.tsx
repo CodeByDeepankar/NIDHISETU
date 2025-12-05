@@ -18,9 +18,11 @@ import { useAppTheme } from '@/hooks/use-app-theme';
 import { useBeneficiaryData } from '@/hooks/use-beneficiary-data';
 import { useAuthStore } from '@/state/authStore';
 import { loanAssistantClient, LoanAssistantMessage } from '@/services/ai/loanAssistant';
+import type { AppTheme } from '@/constants/theme';
 
 export const BeneficiaryLoanAssistantScreen = () => {
   const theme = useAppTheme();
+  const styles = useMemo(() => createStyles(theme), [theme]);
   const { profile, loan } = useBeneficiaryData();
   const storedProfile = useAuthStore((state) => state.profile);
   const beneficiaryName = profile?.name ?? storedProfile?.name;
@@ -108,7 +110,7 @@ export const BeneficiaryLoanAssistantScreen = () => {
   );
 
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: '#F8F9FE' }]}>
+    <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background }]}>
       {/* Header */}
       <View style={styles.header}>
         <AppText style={styles.headerTitle}>NIDHIMITRA</AppText>
@@ -128,18 +130,18 @@ export const BeneficiaryLoanAssistantScreen = () => {
                     <View key={idx} style={[
                         styles.messageBubble,
                         msg.role === 'user' ? styles.userBubble : styles.botBubble,
-                        msg.role === 'user' ? { backgroundColor: theme.colors.primary } : { backgroundColor: '#FFFFFF' }
+                    msg.role === 'user' ? { backgroundColor: theme.colors.primary } : { backgroundColor: theme.colors.surface }
                     ]}>
                         <AppText style={[
                             styles.messageText,
-                            msg.role === 'user' ? { color: '#FFFFFF' } : { color: '#1F2937' }
+                      msg.role === 'user' ? { color: theme.colors.onPrimary } : { color: theme.colors.text }
                         ]}>
                             {msg.content}
                         </AppText>
                     </View>
                 ))}
                 {isSending && (
-                    <View style={[styles.messageBubble, styles.botBubble, { backgroundColor: '#FFFFFF' }]}>
+                  <View style={[styles.messageBubble, styles.botBubble, { backgroundColor: theme.colors.surface }]}>
                         <ActivityIndicator color={theme.colors.primary} size="small" />
                     </View>
                 )}
@@ -149,11 +151,12 @@ export const BeneficiaryLoanAssistantScreen = () => {
 
       {/* Input Area */}
       <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-        <View style={[styles.inputContainer, { backgroundColor: '#FFFFFF' }]}>
+        <View style={[styles.inputContainer, { backgroundColor: theme.colors.surface }]}
+          >
             <TextInput
                 style={styles.input}
                 placeholder="Ask anything..."
-                placeholderTextColor="#9CA3AF"
+            placeholderTextColor={theme.colors.subtext}
                 value={input}
                 onChangeText={setInput}
             />
@@ -172,131 +175,133 @@ export const BeneficiaryLoanAssistantScreen = () => {
   );
 };
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: 20,
-    paddingVertical: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: '#E5E7EB',
-    backgroundColor: '#FFFFFF',
-  },
-  headerTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-  },
-  scrollView: {
-    flex: 1,
-  },
-  scrollContent: {
-    paddingBottom: 200, // Extra padding for bottom tabs
-  },
-  welcomeContainer: {
-    alignItems: 'center',
-    paddingTop: 40,
-    paddingHorizontal: 20,
-  },
-  robotContainer: {
-    marginBottom: 30,
-  },
-  welcomeBubble: {
-    flexDirection: 'row',
-    backgroundColor: '#F3E8FF', // Light purple
-    padding: 16,
-    borderRadius: 16,
-    marginBottom: 30,
-    alignItems: 'center',
-    width: '100%',
-  },
-  welcomeText: {
-    fontSize: 16,
-    color: '#4B5563',
-    flex: 1,
-  },
-  suggestionsContainer: {
-    width: '100%',
-  },
-  suggestionHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 16,
-    gap: 8,
-  },
-  suggestionTitle: {
-    fontSize: 14,
-    color: '#6B7280',
-  },
-  chipsGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 10,
-  },
-  chip: {
-    borderWidth: 1,
-    borderColor: '#E9D5FF',
-  },
-  inputContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: 12,
-    borderRadius: 30,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 5,
-    position: 'absolute',
-    bottom: 110,
-    left: 20,
-    right: 20,
-  },
-  input: {
-    flex: 1,
-    fontSize: 16,
-    paddingVertical: 10,
-    color: '#1F2937',
-    marginLeft: 8,
-  },
-  micButton: {
-    padding: 10,
-  },
-  sendButton: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginLeft: 8,
-  },
-  messagesList: {
-    padding: 20,
-    gap: 16,
-  },
-  messageBubble: {
-    padding: 16,
-    borderRadius: 16,
-    maxWidth: '80%',
-  },
-  userBubble: {
-    alignSelf: 'flex-end',
-    borderBottomRightRadius: 4,
-  },
-  botBubble: {
-    alignSelf: 'flex-start',
-    borderBottomLeftRadius: 4,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 2,
-    elevation: 2,
-  },
-  messageText: {
-    fontSize: 15,
-    lineHeight: 22,
-  },
-});
+const createStyles = (theme: AppTheme) =>
+  StyleSheet.create({
+    container: {
+      flex: 1,
+    },
+    header: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      paddingHorizontal: 20,
+      paddingVertical: 16,
+      borderBottomWidth: StyleSheet.hairlineWidth,
+      borderBottomColor: theme.colors.border,
+      backgroundColor: theme.colors.surface,
+    },
+    headerTitle: {
+      fontSize: 18,
+      fontWeight: '600',
+      color: theme.colors.text,
+    },
+    scrollView: {
+      flex: 1,
+    },
+    scrollContent: {
+      paddingBottom: 200,
+    },
+    welcomeContainer: {
+      alignItems: 'center',
+      paddingTop: 40,
+      paddingHorizontal: 20,
+      gap: 20,
+    },
+    robotContainer: {
+      marginBottom: 10,
+    },
+    welcomeBubble: {
+      flexDirection: 'row',
+      backgroundColor: theme.mode === 'dark' ? theme.colors.surfaceVariant : `${theme.colors.secondary}1A`,
+      padding: 16,
+      borderRadius: 16,
+      alignItems: 'center',
+      width: '100%',
+      gap: 8,
+    },
+    welcomeText: {
+      fontSize: 16,
+      color: theme.colors.subtext,
+      flex: 1,
+    },
+    suggestionsContainer: {
+      width: '100%',
+    },
+    suggestionHeader: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      marginBottom: 16,
+      gap: 8,
+    },
+    suggestionTitle: {
+      fontSize: 14,
+      color: theme.colors.subtext,
+    },
+    chipsGrid: {
+      flexDirection: 'row',
+      flexWrap: 'wrap',
+      gap: 10,
+    },
+    chip: {
+      borderWidth: 1,
+      borderColor: theme.colors.border,
+    },
+    inputContainer: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      padding: 12,
+      borderRadius: 30,
+      shadowColor: theme.colors.border,
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: theme.mode === 'dark' ? 0.4 : 0.1,
+      shadowRadius: 4,
+      elevation: 5,
+      position: 'absolute',
+      bottom: 110,
+      left: 20,
+      right: 20,
+      borderWidth: StyleSheet.hairlineWidth,
+      borderColor: theme.colors.border,
+      gap: 8,
+    },
+    input: {
+      flex: 1,
+      fontSize: 16,
+      paddingVertical: 10,
+      color: theme.colors.text,
+    },
+    micButton: {
+      padding: 10,
+    },
+    sendButton: {
+      width: 44,
+      height: 44,
+      borderRadius: 22,
+      alignItems: 'center',
+      justifyContent: 'center',
+      marginLeft: 8,
+    },
+    messagesList: {
+      padding: 20,
+      gap: 16,
+    },
+    messageBubble: {
+      padding: 16,
+      borderRadius: 16,
+      maxWidth: '80%',
+    },
+    userBubble: {
+      alignSelf: 'flex-end',
+      borderBottomRightRadius: 4,
+    },
+    botBubble: {
+      alignSelf: 'flex-start',
+      borderBottomLeftRadius: 4,
+      borderWidth: 1,
+      borderColor: theme.colors.border,
+    },
+    messageText: {
+      fontSize: 15,
+      lineHeight: 22,
+    },
+  });

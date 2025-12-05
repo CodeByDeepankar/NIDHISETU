@@ -1,9 +1,11 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { View, StyleSheet, FlatList, TouchableOpacity } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useT } from 'lingo.dev/react';
 import { AppText } from '@/components/atoms/app-text';
+import { useAppTheme } from '@/hooks/use-app-theme';
+import type { AppTheme } from '@/constants/theme';
 
 const MOCK_NOTIFICATIONS = [
   {
@@ -34,11 +36,39 @@ const MOCK_NOTIFICATIONS = [
 
 export const NotificationsScreen = ({ navigation }: any) => {
   const t = useT();
+  const theme = useAppTheme();
+  const styles = useMemo(() => createStyles(theme), [theme]);
+
+  const getIconColor = (type: string) => {
+    switch (type) {
+      case 'success':
+        return theme.colors.success;
+      case 'warning':
+        return theme.colors.warning;
+      case 'info':
+        return theme.colors.info;
+      default:
+        return theme.colors.icon;
+    }
+  };
+
+  const getIconName = (type: string) => {
+    switch (type) {
+      case 'success':
+        return 'checkmark-circle';
+      case 'warning':
+        return 'alert-circle';
+      case 'info':
+        return 'information-circle';
+      default:
+        return 'notifications';
+    }
+  };
 
   const renderItem = ({ item }: any) => (
     <TouchableOpacity style={[styles.notificationItem, !item.read && styles.unreadItem]}>
       <View style={[styles.iconContainer, { backgroundColor: getIconColor(item.type) }]}>
-        <Ionicons name={getIconName(item.type)} size={24} color="white" />
+        <Ionicons name={getIconName(item.type)} size={24} color={theme.colors.onPrimary} />
       </View>
       <View style={styles.contentContainer}>
         <View style={styles.headerRow}>
@@ -51,29 +81,11 @@ export const NotificationsScreen = ({ navigation }: any) => {
     </TouchableOpacity>
   );
 
-  const getIconColor = (type: string) => {
-    switch (type) {
-      case 'success': return '#4CAF50';
-      case 'warning': return '#FFC107';
-      case 'info': return '#2196F3';
-      default: return '#9E9E9E';
-    }
-  };
-
-  const getIconName = (type: string) => {
-    switch (type) {
-      case 'success': return 'checkmark-circle';
-      case 'warning': return 'alert-circle';
-      case 'info': return 'information-circle';
-      default: return 'notifications';
-    }
-  };
-
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-          <Ionicons name="arrow-back" size={24} color="#333" />
+          <Ionicons name="arrow-back" size={24} color={theme.colors.icon} />
         </TouchableOpacity>
         <AppText style={styles.headerTitle}>{t('Notifications')}</AppText>
         <View style={{ width: 40 }} />
@@ -87,7 +99,7 @@ export const NotificationsScreen = ({ navigation }: any) => {
         showsVerticalScrollIndicator={false}
         ListEmptyComponent={
           <View style={styles.emptyContainer}>
-            <Ionicons name="notifications-off-outline" size={64} color="#ccc" />
+            <Ionicons name="notifications-off-outline" size={64} color={theme.colors.border} />
             <AppText style={styles.emptyText}>{t('No notifications yet')}</AppText>
           </View>
         }
@@ -96,97 +108,95 @@ export const NotificationsScreen = ({ navigation }: any) => {
   );
 };
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#F5F5F5',
-  },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    backgroundColor: 'white',
-    borderBottomWidth: 1,
-    borderBottomColor: '#eee',
-  },
+const createStyles = (theme: AppTheme) =>
+  StyleSheet.create({
+    container: {
+      flex: 1,
+      backgroundColor: theme.colors.background,
+    },
+    header: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      paddingHorizontal: 16,
+      paddingVertical: 12,
+      backgroundColor: theme.colors.surface,
+      borderBottomWidth: StyleSheet.hairlineWidth,
+      borderBottomColor: theme.colors.border,
+    },
   backButton: {
     padding: 8,
   },
-  headerTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#333',
-  },
-  listContent: {
-    padding: 16,
-  },
-  notificationItem: {
-    flexDirection: 'row',
-    backgroundColor: 'white',
-    padding: 16,
-    borderRadius: 12,
-    marginBottom: 12,
-    alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 2,
-    elevation: 2,
-  },
-  unreadItem: {
-    backgroundColor: '#F0F9FF',
-    borderLeftWidth: 4,
-    borderLeftColor: '#2196F3',
-  },
-  iconContainer: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: 12,
-  },
-  contentContainer: {
-    flex: 1,
-  },
-  headerRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginBottom: 4,
-  },
-  title: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#333',
-    flex: 1,
-    marginRight: 8,
-  },
-  date: {
-    fontSize: 12,
-    color: '#999',
-  },
-  message: {
-    fontSize: 14,
-    color: '#666',
-    lineHeight: 20,
-  },
-  dot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: '#2196F3',
-    marginLeft: 8,
-  },
-  emptyContainer: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingTop: 100,
-  },
-  emptyText: {
-    marginTop: 16,
-    fontSize: 16,
-    color: '#999',
-  },
-});
+    headerTitle: {
+      fontSize: 18,
+      fontWeight: '600',
+      color: theme.colors.text,
+    },
+    listContent: {
+      padding: 16,
+    },
+    notificationItem: {
+      flexDirection: 'row',
+      backgroundColor: theme.colors.surface,
+      padding: 16,
+      borderRadius: 12,
+      marginBottom: 12,
+      alignItems: 'center',
+      borderWidth: 1,
+      borderColor: theme.colors.border,
+    },
+    unreadItem: {
+      backgroundColor: theme.mode === 'dark' ? theme.colors.surfaceVariant : `${theme.colors.info}14`,
+      borderLeftWidth: 4,
+      borderLeftColor: theme.colors.info,
+    },
+    iconContainer: {
+      width: 40,
+      height: 40,
+      borderRadius: 20,
+      justifyContent: 'center',
+      alignItems: 'center',
+      marginRight: 12,
+    },
+    contentContainer: {
+      flex: 1,
+    },
+    headerRow: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      marginBottom: 4,
+    },
+    title: {
+      fontSize: 16,
+      fontWeight: '600',
+      color: theme.colors.text,
+      flex: 1,
+      marginRight: 8,
+    },
+    date: {
+      fontSize: 12,
+      color: theme.colors.subtext,
+    },
+    message: {
+      fontSize: 14,
+      color: theme.colors.subtext,
+      lineHeight: 20,
+    },
+    dot: {
+      width: 8,
+      height: 8,
+      borderRadius: 4,
+      backgroundColor: theme.colors.info,
+      marginLeft: 8,
+    },
+    emptyContainer: {
+      alignItems: 'center',
+      justifyContent: 'center',
+      paddingTop: 100,
+    },
+    emptyText: {
+      marginTop: 16,
+      fontSize: 16,
+      color: theme.colors.subtext,
+    },
+  });

@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import { Dimensions, ScrollView, StyleSheet, TextInput, TouchableOpacity, View } from 'react-native';
+import { ColorValue, Dimensions, ScrollView, StyleSheet, TextInput, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import Svg, { Path } from 'react-native-svg';
@@ -8,6 +8,8 @@ import { Ionicons } from '@expo/vector-icons';
 import { AppButton } from '@/components/atoms/app-button';
 import { AppText } from '@/components/atoms/app-text';
 import { useT } from 'lingo.dev/react';
+import { useAppTheme } from '@/hooks/use-app-theme';
+import type { AppTheme } from '@/constants/theme';
 
 type LoanBurden = 'No' | 'Yes';
 
@@ -27,6 +29,13 @@ const { width } = Dimensions.get('window');
 
 export const EligibilityPredictionScreen = ({ navigation }: any) => {
   const t = useT();
+  const theme = useAppTheme();
+  const styles = useMemo(() => createStyles(theme), [theme]);
+  const gradientColors = useMemo<readonly [ColorValue, ColorValue]>(
+    () => (theme.mode === 'dark' ? [theme.colors.gradientStart, theme.colors.gradientEnd] : ['#4C1D95', '#6D28D9']),
+    [theme]
+  );
+  const waveFill = theme.colors.background;
   const [loanAmount, setLoanAmount] = useState('300000');
   const [monthlyRevenue, setMonthlyRevenue] = useState('95000');
   const [creditScore, setCreditScore] = useState('720');
@@ -97,11 +106,11 @@ export const EligibilityPredictionScreen = ({ navigation }: any) => {
   return (
     <View style={styles.container}>
       <View style={styles.headerContainer}>
-        <LinearGradient colors={['#4C1D95', '#6D28D9']} style={styles.gradientHeader} />
+        <LinearGradient colors={gradientColors} style={styles.gradientHeader} />
         <View style={styles.waveContainer}>
           <Svg height="100" width={width} viewBox="0 0 1440 320" style={styles.wave}>
             <Path
-              fill="#F3F4F6"
+              fill={waveFill}
               d="M0,128L48,138.7C96,149,192,171,288,170.7C384,171,480,149,576,133.3C672,117,768,107,864,112C960,117,1056,139,1152,149.3C1248,160,1344,160,1392,160L1440,160L1440,320L0,320Z"
             />
           </Svg>
@@ -111,7 +120,7 @@ export const EligibilityPredictionScreen = ({ navigation }: any) => {
       <SafeAreaView edges={['top']} style={styles.floatingHeader}>
         <View style={styles.headerContent}>
           <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-            <Ionicons name="arrow-back" size={24} color="white" />
+            <Ionicons name="arrow-back" size={24} color={theme.colors.onPrimary} />
           </TouchableOpacity>
           <AppText style={styles.headerTitle}>{t('Eligibility Prediction')}</AppText>
           <View style={{ width: 40 }} />
@@ -128,6 +137,7 @@ export const EligibilityPredictionScreen = ({ navigation }: any) => {
               onChangeText={setLoanAmount}
               keyboardType="numeric"
               placeholder={t('Requested amount')}
+              placeholderTextColor={theme.colors.subtext}
             />
           </View>
 
@@ -139,6 +149,7 @@ export const EligibilityPredictionScreen = ({ navigation }: any) => {
               onChangeText={setMonthlyRevenue}
               keyboardType="numeric"
               placeholder={t('Average monthly sales')}
+              placeholderTextColor={theme.colors.subtext}
             />
           </View>
 
@@ -150,6 +161,7 @@ export const EligibilityPredictionScreen = ({ navigation }: any) => {
               onChangeText={setCreditScore}
               keyboardType="numeric"
               placeholder={t('CIBIL or equivalent')}
+              placeholderTextColor={theme.colors.subtext}
             />
           </View>
 
@@ -161,6 +173,7 @@ export const EligibilityPredictionScreen = ({ navigation }: any) => {
               onChangeText={setBusinessVintage}
               keyboardType="numeric"
               placeholder={t('Years in operation')}
+              placeholderTextColor={theme.colors.subtext}
             />
           </View>
 
@@ -187,6 +200,7 @@ export const EligibilityPredictionScreen = ({ navigation }: any) => {
             onPress={computeEligibility}
             style={styles.calculateButton}
             labelStyle={styles.calculateButtonText}
+            tone="secondary"
           />
         </View>
 
@@ -213,175 +227,164 @@ export const EligibilityPredictionScreen = ({ navigation }: any) => {
   );
 };
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#F3F4F6',
-  },
-  headerContainer: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    height: 240,
-    zIndex: 0,
-  },
-  gradientHeader: {
-    flex: 1,
-    paddingBottom: 40,
-  },
-  waveContainer: {
-    position: 'absolute',
-    bottom: -1,
-    left: 0,
-    right: 0,
-    zIndex: 1,
-  },
-  wave: {
-    width: '100%',
-  },
-  floatingHeader: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    zIndex: 100,
-  },
-  headerContent: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: 20,
-    paddingTop: 10,
-  },
-  headerTitle: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: 'white',
-    marginTop: 10,
-  },
-  backButton: {
-    padding: 8,
-  },
-  scrollContent: {
-    paddingTop: 140,
-    paddingHorizontal: 20,
-    paddingBottom: 40,
-    zIndex: 10,
-  },
-  card: {
-    backgroundColor: 'white',
-    borderRadius: 20,
-    padding: 24,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
-    marginBottom: 20,
-  },
-  inputGroup: {
-    marginBottom: 20,
-  },
-  label: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#1F2937',
-    marginBottom: 8,
-  },
-  helperText: {
-    fontSize: 12,
-    color: '#6B7280',
-    marginTop: 6,
-  },
-  input: {
-    backgroundColor: '#F3F4F6',
-    borderRadius: 12,
-    padding: 16,
-    fontSize: 16,
-    color: '#333',
-  },
-  toggleContainer: {
-    flexDirection: 'row',
-    backgroundColor: '#F3F4F6',
-    borderRadius: 12,
-    padding: 4,
-    gap: 6,
-  },
-  toggleButton: {
-    flex: 1,
-    paddingVertical: 12,
-    borderRadius: 10,
-    alignItems: 'center',
-  },
-  toggleActive: {
-    backgroundColor: 'white',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 2,
-    elevation: 2,
-  },
-  toggleText: {
-    fontSize: 14,
-    color: '#666',
-    fontWeight: '500',
-  },
-  toggleTextActive: {
-    color: '#333',
-    fontWeight: '600',
-  },
-  calculateButton: {
-    backgroundColor: '#7C3AED',
-    marginTop: 10,
-    borderRadius: 12,
-  },
-  calculateButtonText: {
-    fontWeight: '600',
-  },
-  resultCard: {
-    backgroundColor: 'white',
-    borderRadius: 20,
-    padding: 24,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
-  },
-  resultTitle: {
-    fontSize: 22,
-    fontWeight: 'bold',
-    color: '#1F2937',
-    marginBottom: 8,
-  },
-  scoreLabel: {
-    fontSize: 16,
-    color: '#4B5563',
-    marginBottom: 12,
-  },
-  summaryText: {
-    fontSize: 15,
-    color: '#374151',
-    marginBottom: 18,
-  },
-  listContainer: {
-    gap: 10,
-  },
-  listItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-  },
-  bullet: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: '#7C3AED',
-  },
-  listText: {
-    flex: 1,
-    fontSize: 14,
-    color: '#4B5563',
-  },
-});
+const createStyles = (theme: AppTheme) =>
+  StyleSheet.create({
+    container: {
+      flex: 1,
+      backgroundColor: theme.colors.background,
+    },
+    headerContainer: {
+      position: 'absolute',
+      top: 0,
+      left: 0,
+      right: 0,
+      height: 240,
+      zIndex: 0,
+    },
+    gradientHeader: {
+      flex: 1,
+      paddingBottom: 40,
+    },
+    waveContainer: {
+      position: 'absolute',
+      bottom: -1,
+      left: 0,
+      right: 0,
+      zIndex: 1,
+    },
+    wave: {
+      width: '100%',
+    },
+    floatingHeader: {
+      position: 'absolute',
+      top: 0,
+      left: 0,
+      right: 0,
+      zIndex: 100,
+    },
+    headerContent: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      paddingHorizontal: 20,
+      paddingTop: 10,
+    },
+    headerTitle: {
+      fontSize: 24,
+      fontWeight: 'bold',
+      color: theme.colors.onPrimary,
+      marginTop: 10,
+    },
+    backButton: {
+      padding: 8,
+    },
+    scrollContent: {
+      paddingTop: 140,
+      paddingHorizontal: 20,
+      paddingBottom: 40,
+      zIndex: 10,
+      gap: 20,
+    },
+    card: {
+      backgroundColor: theme.colors.surface,
+      borderRadius: 20,
+      padding: 24,
+      borderWidth: 1,
+      borderColor: theme.colors.border,
+      gap: 20,
+    },
+    inputGroup: {
+      gap: 12,
+    },
+    label: {
+      fontSize: 16,
+      fontWeight: '600',
+      color: theme.colors.text,
+    },
+    helperText: {
+      fontSize: 12,
+      color: theme.colors.subtext,
+      marginTop: 6,
+    },
+    input: {
+      backgroundColor: theme.colors.surfaceVariant,
+      borderRadius: 12,
+      padding: 16,
+      fontSize: 16,
+      color: theme.colors.text,
+    },
+    toggleContainer: {
+      flexDirection: 'row',
+      backgroundColor: theme.colors.surfaceVariant,
+      borderRadius: 12,
+      padding: 4,
+      gap: 6,
+    },
+    toggleButton: {
+      flex: 1,
+      paddingVertical: 12,
+      borderRadius: 10,
+      alignItems: 'center',
+    },
+    toggleActive: {
+      backgroundColor: theme.colors.surface,
+      borderWidth: 1,
+      borderColor: theme.colors.border,
+    },
+    toggleText: {
+      fontSize: 14,
+      color: theme.colors.subtext,
+      fontWeight: '500',
+    },
+    toggleTextActive: {
+      color: theme.colors.text,
+      fontWeight: '600',
+    },
+    calculateButton: {
+      marginTop: 10,
+      borderRadius: 12,
+    },
+    calculateButtonText: {
+      fontWeight: '600',
+    },
+    resultCard: {
+      backgroundColor: theme.colors.surface,
+      borderRadius: 20,
+      padding: 24,
+      borderWidth: 1,
+      borderColor: theme.colors.border,
+      gap: 16,
+    },
+    resultTitle: {
+      fontSize: 22,
+      fontWeight: 'bold',
+      color: theme.colors.text,
+    },
+    scoreLabel: {
+      fontSize: 16,
+      color: theme.colors.subtext,
+    },
+    summaryText: {
+      fontSize: 15,
+      color: theme.colors.text,
+    },
+    listContainer: {
+      gap: 10,
+    },
+    listItem: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 10,
+    },
+    bullet: {
+      width: 8,
+      height: 8,
+      borderRadius: 4,
+      backgroundColor: theme.colors.secondary,
+    },
+    listText: {
+      flex: 1,
+      fontSize: 14,
+      color: theme.colors.subtext,
+    },
+  });

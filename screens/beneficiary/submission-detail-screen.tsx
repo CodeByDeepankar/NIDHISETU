@@ -1,6 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation, useRoute } from '@react-navigation/native';
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { Alert, Image, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Constants from 'expo-constants';
@@ -10,6 +10,8 @@ import { AppText } from '@/components/atoms/app-text';
 import { WaveHeader } from '@/components/molecules/wave-header';
 import { submissionRepository } from '@/services/api/submissionRepository';
 import type { SubmissionEvidence } from '@/types/entities';
+import { useAppTheme } from '@/hooks/use-app-theme';
+import type { AppTheme } from '@/constants/theme';
 
 export const SubmissionDetailScreen = () => {
   const navigation = useNavigation();
@@ -17,6 +19,8 @@ export const SubmissionDetailScreen = () => {
   const { submission } = route.params as { submission: SubmissionEvidence };
   const [currentSubmission, setCurrentSubmission] = useState(submission);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const theme = useAppTheme();
+  const styles = useMemo(() => createStyles(theme), [theme]);
 
   const handleAnalyze = async () => {
     if (!currentSubmission.mediaUrl) {
@@ -58,11 +62,16 @@ export const SubmissionDetailScreen = () => {
 
   const getStatusColor = (status: string) => {
     switch (status?.toLowerCase()) {
-      case 'approved': return '#16A34A';
-      case 'pending': return '#F59E0B';
-      case 'rejected': return '#DC2626';
-      case 'correction_needed': return '#EAB308';
-      default: return '#6B7280';
+      case 'approved':
+        return theme.colors.success;
+      case 'pending':
+        return theme.colors.warning;
+      case 'rejected':
+        return theme.colors.error;
+      case 'correction_needed':
+        return theme.colors.warning;
+      default:
+        return theme.colors.subtext;
     }
   };
 
@@ -87,7 +96,8 @@ export const SubmissionDetailScreen = () => {
         <View style={styles.card}>
           <View style={styles.headerRow}>
             <AppText style={styles.title}>{currentSubmission.assetName}</AppText>
-            <View style={[styles.badge, { backgroundColor: getStatusColor(currentSubmission.status) + '20' }]}>
+            <View style={[styles.badge, { backgroundColor: `${getStatusColor(currentSubmission.status)}20` }]}
+            >
               <AppText style={[styles.statusText, { color: getStatusColor(currentSubmission.status) }]}>
                 {currentSubmission.status.toUpperCase()}
               </AppText>
@@ -141,8 +151,8 @@ export const SubmissionDetailScreen = () => {
           {currentSubmission.rejectionReason && (
             <>
               <View style={styles.divider} />
-              <AppText style={[styles.sectionHeader, { color: '#DC2626' }]}>Rejection Reason</AppText>
-              <AppText style={[styles.remarks, { color: '#DC2626' }]}>{currentSubmission.rejectionReason}</AppText>
+              <AppText style={[styles.sectionHeader, { color: theme.colors.error }]}>Rejection Reason</AppText>
+              <AppText style={[styles.remarks, { color: theme.colors.error }]}>{currentSubmission.rejectionReason}</AppText>
             </>
           )}
         </View>
@@ -151,85 +161,83 @@ export const SubmissionDetailScreen = () => {
   );
 };
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#F5F5F5',
-  },
-  content: {
-    padding: 20,
-    paddingTop: 80,
-  },
-  image: {
-    width: '100%',
-    height: 250,
-    borderRadius: 16,
-    marginBottom: 20,
-    backgroundColor: '#E5E7EB',
-  },
-  card: {
-    backgroundColor: 'white',
-    borderRadius: 16,
-    padding: 20,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 4,
-    elevation: 2,
-  },
-  headerRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 16,
-  },
-  title: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#1F2937',
-    flex: 1,
-  },
-  badge: {
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 12,
-  },
-  statusText: {
-    fontSize: 12,
-    fontWeight: 'bold',
-  },
-  divider: {
-    height: 1,
-    backgroundColor: '#F3F4F6',
-    marginVertical: 16,
-  },
-  row: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginBottom: 12,
-  },
-  label: {
-    fontSize: 14,
-    color: '#6B7280',
-  },
-  value: {
-    fontSize: 14,
-    fontWeight: '500',
-    color: '#1F2937',
-    textAlign: 'right',
-    flex: 1,
-    marginLeft: 16,
-  },
-  sectionHeader: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#374151',
-    marginBottom: 12,
-  },
-  remarks: {
-    fontSize: 14,
-    color: '#4B5563',
-    fontStyle: 'italic',
-    lineHeight: 20,
-  },
-});
+const createStyles = (theme: AppTheme) =>
+  StyleSheet.create({
+    container: {
+      flex: 1,
+      backgroundColor: theme.colors.background,
+    },
+    content: {
+      padding: 20,
+      paddingTop: 80,
+    },
+    image: {
+      width: '100%',
+      height: 250,
+      borderRadius: 16,
+      marginBottom: 20,
+      backgroundColor: theme.colors.surfaceVariant,
+    },
+    card: {
+      backgroundColor: theme.colors.surface,
+      borderRadius: 16,
+      padding: 20,
+      borderWidth: 1,
+      borderColor: theme.colors.border,
+    },
+    headerRow: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      marginBottom: 16,
+    },
+    title: {
+      fontSize: 18,
+      fontWeight: 'bold',
+      color: theme.colors.text,
+      flex: 1,
+    },
+    badge: {
+      paddingHorizontal: 10,
+      paddingVertical: 4,
+      borderRadius: 12,
+    },
+    statusText: {
+      fontSize: 12,
+      fontWeight: 'bold',
+    },
+    divider: {
+      height: StyleSheet.hairlineWidth,
+      backgroundColor: theme.colors.border,
+      marginVertical: 16,
+    },
+    row: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      marginBottom: 12,
+    },
+    label: {
+      fontSize: 14,
+      color: theme.colors.subtext,
+    },
+    value: {
+      fontSize: 14,
+      fontWeight: '500',
+      color: theme.colors.text,
+      textAlign: 'right',
+      flex: 1,
+      marginLeft: 16,
+    },
+    sectionHeader: {
+      fontSize: 16,
+      fontWeight: '600',
+      color: theme.colors.text,
+      marginBottom: 12,
+    },
+    remarks: {
+      fontSize: 14,
+      color: theme.colors.subtext,
+      fontStyle: 'italic',
+      lineHeight: 20,
+    },
+  });

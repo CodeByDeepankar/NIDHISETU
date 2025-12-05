@@ -1,5 +1,19 @@
-import React, { useState, useEffect } from 'react';
-import { View, StyleSheet, ScrollView, TouchableOpacity, Dimensions, TextInput, Image, Alert, Modal, FlatList, Platform, Linking } from 'react-native';
+import React, { useEffect, useMemo, useState } from 'react';
+import {
+  Alert,
+  ColorValue,
+  Dimensions,
+  FlatList,
+  Image,
+  Linking,
+  Modal,
+  Platform,
+  ScrollView,
+  StyleSheet,
+  TextInput,
+  TouchableOpacity,
+  View,
+} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
@@ -12,7 +26,9 @@ import * as Network from 'expo-network';
 import { decode as base64Decode } from 'base-64';
 import { AppText } from '@/components/atoms/app-text';
 import { AppButton } from '@/components/atoms/app-button';
+import type { AppTheme } from '@/constants/theme';
 import { useSubmissions } from '@/hooks/use-submissions';
+import { useAppTheme } from '@/hooks/use-app-theme';
 import { supabase } from '@/lib/supabaseClient';
 import { useAuthStore } from '@/state/authStore';
 
@@ -41,6 +57,13 @@ export type UploadEvidenceScreenProps = {
 
 export const UploadEvidenceScreen = ({ navigation, route }: UploadEvidenceScreenProps) => {
   const { requirementId, requirementName } = route.params || {};
+  const theme = useAppTheme();
+  const styles = useMemo(() => createStyles(theme), [theme]);
+  const gradientColors = useMemo<readonly [ColorValue, ColorValue]>(
+    () => (theme.mode === 'dark' ? [theme.colors.gradientStart, theme.colors.gradientEnd] : ['#A7F3D0', '#6EE7B7']),
+    [theme]
+  );
+  const waveFill = theme.colors.background;
   const [imageUri, setImageUri] = useState<string | null>(null);
   const [assetCategory, setAssetCategory] = useState(requirementName || 'Machinery');
   const [caption, setCaption] = useState('');
@@ -209,16 +232,11 @@ export const UploadEvidenceScreen = ({ navigation, route }: UploadEvidenceScreen
     <View style={styles.container}>
       {/* Header with Wave */}
       <View style={styles.headerContainer}>
-        <LinearGradient
-          colors={['#A7F3D0', '#6EE7B7']}
-          style={styles.gradientHeader}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 0 }}
-        />
+        <LinearGradient colors={gradientColors} style={styles.gradientHeader} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} />
         <View style={styles.waveContainer}>
           <Svg height="100" width={width} viewBox="0 0 1440 320" style={styles.wave}>
             <Path
-              fill="#FFFFFF"
+              fill={waveFill}
               d="M0,160L48,176C96,192,192,224,288,224C384,224,480,192,576,176C672,160,768,160,864,176C960,192,1056,224,1152,229.3C1248,235,1344,213,1392,202.7L1440,192L1440,320L0,320Z"
             />
           </Svg>
@@ -228,7 +246,7 @@ export const UploadEvidenceScreen = ({ navigation, route }: UploadEvidenceScreen
       <SafeAreaView edges={['top']} style={styles.floatingHeader}>
         <View style={styles.headerContent}>
           <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-            <Ionicons name="arrow-back" size={24} color="#333" />
+            <Ionicons name="arrow-back" size={24} color={theme.colors.onPrimary} />
           </TouchableOpacity>
           <AppText style={styles.headerTitle}>Upload Evidence</AppText>
           <View style={{ width: 40 }} />
@@ -252,7 +270,7 @@ export const UploadEvidenceScreen = ({ navigation, route }: UploadEvidenceScreen
           ) : (
             <View style={styles.placeholderContent}>
               <View style={styles.iconCircle}>
-                <Ionicons name="camera" size={40} color="#9CA3AF" />
+                <Ionicons name="camera" size={40} color={theme.colors.subtext} />
               </View>
               <AppText style={styles.geoText}>GEO CAMERA</AppText>
               <AppText style={styles.timestampText}>{timestamp}</AppText>
@@ -270,7 +288,7 @@ export const UploadEvidenceScreen = ({ navigation, route }: UploadEvidenceScreen
                 onPress={() => setShowDropdown(true)}
             >
                 <AppText style={styles.dropdownText}>{assetCategory}</AppText>
-                <Ionicons name="chevron-down" size={20} color="#6B7280" />
+                <Ionicons name="chevron-down" size={20} color={theme.colors.subtext} />
             </TouchableOpacity>
           </View>
 
@@ -281,7 +299,7 @@ export const UploadEvidenceScreen = ({ navigation, route }: UploadEvidenceScreen
               value={caption}
               onChangeText={setCaption}
               placeholder="Enter a caption"
-              placeholderTextColor="#9CA3AF"
+              placeholderTextColor={theme.colors.subtext}
             />
           </View>
 
@@ -290,8 +308,9 @@ export const UploadEvidenceScreen = ({ navigation, route }: UploadEvidenceScreen
                 label={isOnline ? "Upload Evidence" : "Save Offline"}
                 onPress={handleUpload}
                 loading={loading}
-                style={styles.uploadButton}
-                textStyle={styles.uploadButtonText}
+               style={styles.uploadButton}
+               labelStyle={styles.uploadButtonText}
+               tone="secondary"
             />
           </View>
         </View>
@@ -330,7 +349,7 @@ export const UploadEvidenceScreen = ({ navigation, route }: UploadEvidenceScreen
                                 {item}
                             </AppText>
                             {assetCategory === item && (
-                                <Ionicons name="checkmark" size={20} color="#7C3AED" />
+                              <Ionicons name="checkmark" size={20} color={theme.colors.secondary} />
                             )}
                         </TouchableOpacity>
                     )}
@@ -342,198 +361,197 @@ export const UploadEvidenceScreen = ({ navigation, route }: UploadEvidenceScreen
   );
 };
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#FFFFFF',
-  },
-  headerContainer: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    height: 200,
-    zIndex: 0,
-  },
-  gradientHeader: {
-    flex: 1,
-    paddingBottom: 40,
-  },
-  waveContainer: {
-    position: 'absolute',
-    bottom: -1,
-    left: 0,
-    right: 0,
-    zIndex: 1,
-  },
-  wave: {
-    width: '100%',
-  },
-  floatingHeader: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    zIndex: 100,
-  },
-  headerContent: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: 20,
-    paddingTop: 10,
-  },
-  headerTitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: '#1F2937',
-  },
-  backButton: {
-    padding: 8,
-  },
-  scrollContent: {
-    paddingTop: 160,
-    paddingHorizontal: 24,
-    paddingBottom: 40,
-    zIndex: 10,
-  },
-  imageCard: {
-    width: '100%',
-    height: 240,
-    backgroundColor: '#F9FAFB',
-    borderRadius: 20,
-    borderWidth: 1,
-    borderColor: '#E5E7EB',
-    borderStyle: 'dashed',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: 32,
-    overflow: 'hidden',
-  },
-  previewImage: {
-    width: '100%',
-    height: '100%',
-  },
-  metadataOverlay: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
-    backgroundColor: 'rgba(0,0,0,0.6)',
-    padding: 12,
-  },
-  metadataText: {
-    color: 'white',
-    fontSize: 10,
-    fontFamily: Platform.OS === 'ios' ? 'Courier' : 'monospace',
-  },
-  placeholderContent: {
-    alignItems: 'center',
-  },
-  iconCircle: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
-    backgroundColor: '#E5E7EB',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: 12,
-  },
-  geoText: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#6B7280',
-    marginBottom: 4,
-  },
-  timestampText: {
-    fontSize: 14,
-    color: '#9CA3AF',
-  },
-  locationText: {
-    fontSize: 12,
-    color: '#10B981',
-    marginTop: 4,
-    fontWeight: '500',
-  },
-  form: {
-    gap: 24,
-  },
-  inputGroup: {
-    gap: 8,
-  },
-  label: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#111827',
-  },
-  input: {
-    borderWidth: 1,
-    borderColor: '#E5E7EB',
-    borderRadius: 12,
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    fontSize: 16,
-    color: '#1F2937',
-    backgroundColor: '#FFFFFF',
-  },
-  dropdownButton: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: '#E5E7EB',
-    borderRadius: 12,
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    backgroundColor: '#FFFFFF',
-  },
-  dropdownText: {
-    fontSize: 16,
-    color: '#1F2937',
-  },
-  uploadButton: {
-    backgroundColor: '#7C3AED',
-    borderRadius: 12,
-    height: 50,
-    marginTop: 8,
-  },
-  uploadButtonText: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#FFFFFF',
-  },
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.5)',
-    justifyContent: 'center',
-    padding: 20,
-  },
-  modalContent: {
-    backgroundColor: 'white',
-    borderRadius: 16,
-    padding: 20,
-    maxHeight: '80%',
-  },
-  modalTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    marginBottom: 16,
-    color: '#1F2937',
-  },
-  modalItem: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingVertical: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: '#F3F4F6',
-  },
-  modalItemText: {
-    fontSize: 16,
-    color: '#4B5563',
-  },
-  selectedItemText: {
-    color: '#7C3AED',
-    fontWeight: '600',
-  },
-});
+const createStyles = (theme: AppTheme) =>
+  StyleSheet.create({
+    container: {
+      flex: 1,
+      backgroundColor: theme.colors.background,
+    },
+    headerContainer: {
+      position: 'absolute',
+      top: 0,
+      left: 0,
+      right: 0,
+      height: 200,
+      zIndex: 0,
+    },
+    gradientHeader: {
+      flex: 1,
+      paddingBottom: 40,
+    },
+    waveContainer: {
+      position: 'absolute',
+      bottom: -1,
+      left: 0,
+      right: 0,
+      zIndex: 1,
+    },
+    wave: {
+      width: '100%',
+    },
+    floatingHeader: {
+      position: 'absolute',
+      top: 0,
+      left: 0,
+      right: 0,
+      zIndex: 100,
+    },
+    headerContent: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      paddingHorizontal: 20,
+      paddingTop: 10,
+    },
+    headerTitle: {
+      fontSize: 20,
+      fontWeight: 'bold',
+      color: theme.colors.onPrimary,
+    },
+    backButton: {
+      padding: 8,
+    },
+    scrollContent: {
+      paddingTop: 160,
+      paddingHorizontal: 24,
+      paddingBottom: 40,
+      zIndex: 10,
+      gap: 32,
+    },
+    imageCard: {
+      width: '100%',
+      height: 240,
+      backgroundColor: theme.colors.surface,
+      borderRadius: 20,
+      borderWidth: 1,
+      borderColor: theme.colors.border,
+      borderStyle: 'dashed',
+      justifyContent: 'center',
+      alignItems: 'center',
+      overflow: 'hidden',
+    },
+    previewImage: {
+      width: '100%',
+      height: '100%',
+    },
+    metadataOverlay: {
+      position: 'absolute',
+      bottom: 0,
+      left: 0,
+      right: 0,
+      backgroundColor: 'rgba(0,0,0,0.6)',
+      padding: 12,
+    },
+    metadataText: {
+      color: theme.colors.onPrimary,
+      fontSize: 10,
+      fontFamily: Platform.OS === 'ios' ? 'Courier' : 'monospace',
+    },
+    placeholderContent: {
+      alignItems: 'center',
+      gap: 8,
+    },
+    iconCircle: {
+      width: 80,
+      height: 80,
+      borderRadius: 40,
+      backgroundColor: theme.colors.surfaceVariant,
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
+    geoText: {
+      fontSize: 16,
+      fontWeight: '600',
+      color: theme.colors.text,
+    },
+    timestampText: {
+      fontSize: 14,
+      color: theme.colors.subtext,
+    },
+    locationText: {
+      fontSize: 12,
+      color: theme.colors.success,
+      marginTop: 4,
+      fontWeight: '500',
+    },
+    form: {
+      gap: 24,
+    },
+    inputGroup: {
+      gap: 8,
+    },
+    label: {
+      fontSize: 16,
+      fontWeight: '600',
+      color: theme.colors.text,
+    },
+    input: {
+      borderWidth: 1,
+      borderColor: theme.colors.border,
+      borderRadius: 12,
+      paddingHorizontal: 16,
+      paddingVertical: 12,
+      fontSize: 16,
+      color: theme.colors.text,
+      backgroundColor: theme.colors.surface,
+    },
+    dropdownButton: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      borderWidth: 1,
+      borderColor: theme.colors.border,
+      borderRadius: 12,
+      paddingHorizontal: 16,
+      paddingVertical: 12,
+      backgroundColor: theme.colors.surface,
+    },
+    dropdownText: {
+      fontSize: 16,
+      color: theme.colors.text,
+    },
+    uploadButton: {
+      marginTop: 8,
+    },
+    uploadButtonText: {
+      fontSize: 16,
+      fontWeight: '600',
+      textTransform: 'none',
+    },
+    modalOverlay: {
+      flex: 1,
+      backgroundColor: theme.colors.overlay,
+      justifyContent: 'center',
+      padding: 20,
+    },
+    modalContent: {
+      backgroundColor: theme.colors.surface,
+      borderRadius: theme.radii.lg,
+      padding: 20,
+      maxHeight: '80%',
+      borderWidth: 1,
+      borderColor: theme.colors.border,
+    },
+    modalTitle: {
+      fontSize: 18,
+      fontWeight: 'bold',
+      marginBottom: 16,
+      color: theme.colors.text,
+    },
+    modalItem: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      paddingVertical: 12,
+      borderBottomWidth: 1,
+      borderBottomColor: theme.colors.border,
+    },
+    modalItemText: {
+      fontSize: 16,
+      color: theme.colors.text,
+    },
+    selectedItemText: {
+      color: theme.colors.secondary,
+      fontWeight: '600',
+    },
+  });
