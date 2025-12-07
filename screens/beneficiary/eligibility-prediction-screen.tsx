@@ -7,19 +7,26 @@ import { Ionicons } from '@expo/vector-icons';
 
 import { AppButton } from '@/components/atoms/app-button';
 import { AppText } from '@/components/atoms/app-text';
+import { useT } from 'lingo.dev/react';
 
 type LoanBurden = 'No' | 'Yes';
 
 type EligibilityResult = {
   score: number;
   verdict: 'Likely Approved' | 'Needs Clarification' | 'High Risk';
-  summary: string;
-  recommendations: string[];
+  summaryKey: 'eligibility.summary.strong' | 'eligibility.summary.medium' | 'eligibility.summary.weak';
+  recommendationKeys: (
+    | 'eligibility.rec.improve-score'
+    | 'eligibility.rec.boost-revenue'
+    | 'eligibility.rec.noc'
+    | 'eligibility.rec.vintage'
+  )[];
 };
 
 const { width } = Dimensions.get('window');
 
 export const EligibilityPredictionScreen = ({ navigation }: any) => {
+  const t = useT();
   const [loanAmount, setLoanAmount] = useState('300000');
   const [monthlyRevenue, setMonthlyRevenue] = useState('95000');
   const [creditScore, setCreditScore] = useState('720');
@@ -30,9 +37,9 @@ export const EligibilityPredictionScreen = ({ navigation }: any) => {
   const helperCopy = useMemo(
     () =>
       existingLoans === 'Yes'
-        ? 'Keep repayment history handy — officers check DSCR when other loans exist.'
-        : 'Great! Low leverage improves eligibility.',
-    [existingLoans]
+        ? t('Keep repayment history handy — officers check DSCR when other loans exist.')
+        : t('Great! Low leverage improves eligibility.'),
+    [existingLoans, t]
   );
 
   const computeEligibility = () => {
@@ -65,26 +72,26 @@ export const EligibilityPredictionScreen = ({ navigation }: any) => {
 
     const boundedScore = Math.max(10, Math.min(aggregate, 100));
     let verdict: EligibilityResult['verdict'];
-    let summary: string;
-    const recommendations: string[] = [];
+    let summaryKey: EligibilityResult['summaryKey'];
+    const recommendationKeys: EligibilityResult['recommendationKeys'] = [];
 
     if (boundedScore >= 80) {
       verdict = 'Likely Approved';
-      summary = 'Your profile aligns with priority lending norms. Prepare documents for quick sanction.';
+      summaryKey = 'eligibility.summary.strong';
     } else if (boundedScore >= 60) {
       verdict = 'Needs Clarification';
-      summary = 'Numbers are promising but officers may seek additional proofs or guarantors.';
+      summaryKey = 'eligibility.summary.medium';
     } else {
       verdict = 'High Risk';
-      summary = 'Eligibility looks weak under current inputs. Strengthening financials is advised.';
+      summaryKey = 'eligibility.summary.weak';
     }
 
-    if (score < 700) recommendations.push('Improve credit score above 700 for smoother approvals.');
-    if (revenue < amount / 15) recommendations.push('Show higher monthly sales or reduce loan request.');
-    if (existingLoans === 'Yes') recommendations.push('Carry latest NOC or repayment statements for other loans.');
-    if (vintage < 3) recommendations.push('Share mentor/UBA letters to offset low business vintage.');
+    if (score < 700) recommendationKeys.push('eligibility.rec.improve-score');
+    if (revenue < amount / 15) recommendationKeys.push('eligibility.rec.boost-revenue');
+    if (existingLoans === 'Yes') recommendationKeys.push('eligibility.rec.noc');
+    if (vintage < 3) recommendationKeys.push('eligibility.rec.vintage');
 
-    setResult({ score: boundedScore, verdict, summary, recommendations });
+    setResult({ score: boundedScore, verdict, summaryKey, recommendationKeys });
   };
 
   return (
@@ -106,7 +113,7 @@ export const EligibilityPredictionScreen = ({ navigation }: any) => {
           <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
             <Ionicons name="arrow-back" size={24} color="white" />
           </TouchableOpacity>
-          <AppText style={styles.headerTitle}>Eligibility Prediction</AppText>
+          <AppText style={styles.headerTitle}>{t('Eligibility Prediction')}</AppText>
           <View style={{ width: 40 }} />
         </View>
       </SafeAreaView>
@@ -114,51 +121,51 @@ export const EligibilityPredictionScreen = ({ navigation }: any) => {
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
         <View style={styles.card}>
           <View style={styles.inputGroup}>
-            <AppText style={styles.label}>Loan Amount Needed (₹)</AppText>
+            <AppText style={styles.label}>{t('Loan Amount Needed (₹)')}</AppText>
             <TextInput
               style={styles.input}
               value={loanAmount}
               onChangeText={setLoanAmount}
               keyboardType="numeric"
-              placeholder="Requested amount"
+              placeholder={t('Requested amount')}
             />
           </View>
 
           <View style={styles.inputGroup}>
-            <AppText style={styles.label}>Monthly Revenue (₹)</AppText>
+            <AppText style={styles.label}>{t('Monthly Revenue (₹)')}</AppText>
             <TextInput
               style={styles.input}
               value={monthlyRevenue}
               onChangeText={setMonthlyRevenue}
               keyboardType="numeric"
-              placeholder="Average monthly sales"
+              placeholder={t('Average monthly sales')}
             />
           </View>
 
           <View style={styles.inputGroup}>
-            <AppText style={styles.label}>Credit Score</AppText>
+            <AppText style={styles.label}>{t('Credit Score')}</AppText>
             <TextInput
               style={styles.input}
               value={creditScore}
               onChangeText={setCreditScore}
               keyboardType="numeric"
-              placeholder="CIBIL or equivalent"
+              placeholder={t('CIBIL or equivalent')}
             />
           </View>
 
           <View style={styles.inputGroup}>
-            <AppText style={styles.label}>Business Vintage (years)</AppText>
+            <AppText style={styles.label}>{t('Business Vintage (years)')}</AppText>
             <TextInput
               style={styles.input}
               value={businessVintage}
               onChangeText={setBusinessVintage}
               keyboardType="numeric"
-              placeholder="Years in operation"
+              placeholder={t('Years in operation')}
             />
           </View>
 
           <View style={styles.inputGroup}>
-            <AppText style={styles.label}>Other Active Loans</AppText>
+            <AppText style={styles.label}>{t('Other Active Loans')}</AppText>
             <View style={styles.toggleContainer}>
               {(['No', 'Yes'] as LoanBurden[]).map((option) => (
                 <TouchableOpacity
@@ -167,7 +174,7 @@ export const EligibilityPredictionScreen = ({ navigation }: any) => {
                   onPress={() => setExistingLoans(option)}
                 >
                   <AppText style={[styles.toggleText, existingLoans === option && styles.toggleTextActive]}>
-                    {option}
+                    {t(option)}
                   </AppText>
                 </TouchableOpacity>
               ))}
@@ -175,21 +182,26 @@ export const EligibilityPredictionScreen = ({ navigation }: any) => {
             <AppText style={styles.helperText}>{helperCopy}</AppText>
           </View>
 
-          <AppButton label="Predict Eligibility" onPress={computeEligibility} style={styles.calculateButton} labelStyle={styles.calculateButtonText} />
+          <AppButton
+            label={t('Predict Eligibility')}
+            onPress={computeEligibility}
+            style={styles.calculateButton}
+            labelStyle={styles.calculateButtonText}
+          />
         </View>
 
         {result && (
           <View style={styles.resultCard}>
-            <AppText style={styles.resultTitle}>{result.verdict}</AppText>
-            <AppText style={styles.scoreLabel}>Composite score: {result.score}/100</AppText>
-            <AppText style={styles.summaryText}>{result.summary}</AppText>
+            <AppText style={styles.resultTitle}>{t(result.verdict)}</AppText>
+            <AppText style={styles.scoreLabel}>{`${t('Composite score')}: ${result.score}/100`}</AppText>
+            <AppText style={styles.summaryText}>{t(result.summaryKey)}</AppText>
 
-            {result.recommendations.length > 0 && (
+            {result.recommendationKeys.length > 0 && (
               <View style={styles.listContainer}>
-                {result.recommendations.map((item) => (
+                {result.recommendationKeys.map((item) => (
                   <View style={styles.listItem} key={item}>
                     <View style={styles.bullet} />
-                    <AppText style={styles.listText}>{item}</AppText>
+                    <AppText style={styles.listText}>{t(item)}</AppText>
                   </View>
                 ))}
               </View>

@@ -11,6 +11,7 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import { getPaperTheme } from '@/constants/theme';
 import { useAppTheme } from '@/hooks/use-app-theme';
+import LocalizeProvider from '@/src/i18n/LocalizeProvider';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -70,14 +71,16 @@ export const AppProviders = ({ children }: Props) => {
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <SafeAreaProvider>
-        <PaperProvider theme={paperTheme}>
-          <PersistQueryClientProvider
-            client={queryClient}
-            persistOptions={{ persister: queryCachePersister, maxAge: 1000 * 60 * 60 }}
-          >
-            {children}
-          </PersistQueryClientProvider>
-        </PaperProvider>
+        <LocalizeProvider>
+          <PaperProvider theme={paperTheme}>
+            <PersistQueryClientProvider
+              client={queryClient}
+              persistOptions={{ persister: queryCachePersister, maxAge: 1000 * 60 * 60 }}
+            >
+              {children}
+            </PersistQueryClientProvider>
+          </PaperProvider>
+        </LocalizeProvider>
       </SafeAreaProvider>
     </GestureHandlerRootView>
   );

@@ -1,5 +1,7 @@
+import { useMemo } from 'react';
 import { Image, StyleSheet, TouchableOpacity, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { useAppLocale, useT } from 'lingo.dev/react';
 
 import { AppText } from '@/components/atoms/app-text';
 import { Chip } from '@/components/atoms/chip';
@@ -23,8 +25,25 @@ export const SubmissionCard = ({
   role = 'beneficiary',
 }: SubmissionCardProps) => {
   const theme = useAppTheme();
+  const t = useT();
+  const { locale } = useAppLocale();
   const statusTone = getStatusTone(submission.status);
   const statusBackground = getStatusBackground(theme, submission.status);
+  const dateLocale = locale === 'en' ? 'en-GB' : locale;
+
+  const capturedAtLabel = useMemo(() => (
+    new Date(submission.capturedAt).toLocaleString(dateLocale, {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+    })
+  ), [submission.capturedAt, dateLocale]);
+
+  const statusLabel = useMemo(() => t(getStatusLabel(submission.status)), [submission.status, t]);
+  const hasCustomRemarks = Boolean(submission.remarks);
+  const remarksText = submission.remarks ?? t('No remarks provided');
 
   const handlePress = () => {
     if (submission.status === 'failed' || submission.status === 'rejected') {
@@ -56,17 +75,11 @@ export const SubmissionCard = ({
       <View style={styles.contentContainer}>
         {/* Row 1: Date & Status */}
         <View style={styles.headerRow}>
-          <AppText style={styles.dateText}>
-            {new Date(submission.capturedAt).toLocaleString('en-GB', {
-              day: '2-digit',
-              month: '2-digit',
-              year: 'numeric',
-              hour: '2-digit',
-              minute: '2-digit',
-            })}
+          <AppText style={styles.dateText} translate={false}>
+            {capturedAtLabel}
           </AppText>
           <Chip
-            label={getStatusLabel(submission.status)}
+            label={statusLabel}
             tone={statusTone}
             backgroundColor={statusBackground}
             style={styles.statusChip}
@@ -75,13 +88,13 @@ export const SubmissionCard = ({
         </View>
 
         {/* Row 2: Asset Name */}
-        <AppText style={styles.assetName} numberOfLines={1}>
+        <AppText style={styles.assetName} numberOfLines={1} translate={false}>
           {submission.assetName}
         </AppText>
 
         {/* Row 3: Remarks */}
-        <AppText style={styles.remarks} numberOfLines={1}>
-          {submission.remarks || 'No remarks provided'}
+        <AppText style={styles.remarks} numberOfLines={1} translate={!hasCustomRemarks}>
+          {remarksText}
         </AppText>
       </View>
     </TouchableOpacity>

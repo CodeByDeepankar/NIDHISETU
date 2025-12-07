@@ -26,6 +26,15 @@ const staticProfiles: Record<string, UserProfile> = {
     designation: 'Nodal Officer',
     region: 'Odisha Division',
   },
+  '9777569415': {
+    id: 'officer-3',
+    name: 'Field Officer',
+    mobile: '9777569415',
+    role: 'officer',
+    department: 'MSME Directorate',
+    designation: 'Field Officer',
+    region: 'Chhattisgarh Circle',
+  },
   '9009001234': {
     id: 'reviewer-1',
     name: 'Lead Reviewer',
@@ -42,15 +51,15 @@ const resolveProfile = async (mobile: string): Promise<UserProfile> => {
     throw new Error('Please provide a valid mobile number.');
   }
   
-  // 1. Check Static (Legacy/Dev)
-  if (staticProfiles[normalized]) {
-    return staticProfiles[normalized];
-  }
-
-  // 2. Check Beneficiary DB
+  // 1. Check Beneficiary DB (Prioritize DB over static for beneficiaries)
   const beneficiaryProfile = await beneficiaryRepository.getProfileByMobile(normalized);
   if (beneficiaryProfile) {
     return beneficiaryProfile;
+  }
+
+  // 2. Check Static (Legacy/Dev)
+  if (staticProfiles[normalized]) {
+    return staticProfiles[normalized];
   }
 
   // 3. Check Officer DB

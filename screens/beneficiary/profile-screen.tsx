@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { View, StyleSheet, ScrollView, Image, TouchableOpacity, Dimensions } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -6,24 +6,35 @@ import { Ionicons } from '@expo/vector-icons';
 import Svg, { Path } from 'react-native-svg';
 import { useAuthStore } from '@/state/authStore';
 import { AppText } from '@/components/atoms/app-text';
+import { useT } from 'lingo.dev/react';
 
 const { width } = Dimensions.get('window');
 
 export const BeneficiaryProfileScreen = ({ navigation }: any) => {
   const profile = useAuthStore((state) => state.profile);
-  const signOut = useAuthStore((state) => state.actions.logout);
+  const t = useT();
+
+  // Force refresh image by appending timestamp if avatarUrl exists
+  const avatarUrl = useMemo(() => {
+      if (!profile?.avatarUrl) return null;
+      // If url already has query params, append with &, else ?
+      const separator = profile.avatarUrl.includes('?') ? '&' : '?';
+      return `${profile.avatarUrl}${separator}refresh=${Date.now()}`; // Force refresh on mount
+  }, [profile?.avatarUrl]);
 
   // Mock data if profile is missing some fields
-  const userProfile = {
-    name: profile?.name || 'Ramesh Kumar',
-    id: profile?.id || 'BEN-2024-001',
-    loanCategory: (profile as any)?.scheme || 'PM SVANidhi - Street Vendor',
-    phone: profile?.mobile || '+91 98765 43210',
-    email: (profile as any)?.email || 'ramesh.kumar@example.com',
-    address: (profile as any)?.village ? `${(profile as any).village}, ${(profile as any).district}` : '123, Market Road, Sector 4, New Delhi - 110001',
-    kycStatus: 'Verified',
-    avatar: profile?.avatarUrl || 'https://randomuser.me/api/portraits/men/32.jpg', // Placeholder
-  };
+    const userProfile = useMemo(() => ({
+        name: profile?.name || 'Ramesh Kumar',
+        id: profile?.id || 'BEN-2024-001',
+        loanCategory: (profile as any)?.scheme || 'PM SVANidhi - Street Vendor',
+        phone: profile?.mobile || '+91 98765 43210',
+        email: (profile as any)?.email || 'ramesh.kumar@example.com',
+        address: (profile as any)?.village
+            ? `${(profile as any).village}, ${(profile as any).district}`
+            : '123, Market Road, Sector 4, New Delhi - 110001',
+        kycStatus: (profile as any)?.kycStatus || 'Verified',
+        avatar: avatarUrl || `https://randomuser.me/api/portraits/men/${parseInt(profile?.mobile?.slice(-2) || '32') % 100}.jpg`, // Placeholder
+    }), [profile, avatarUrl]);
 
     return (
     <View style={styles.container}>
@@ -54,17 +65,26 @@ export const BeneficiaryProfileScreen = ({ navigation }: any) => {
 
             {/* Name and ID */}
             <View style={styles.nameSection}>
-                <AppText style={styles.nameText}>{userProfile.name}</AppText>
-                <AppText style={styles.idText}>ID: {userProfile.id}</AppText>
+                <AppText style={styles.nameText} translate={false}>
+                    {userProfile.name}
+                </AppText>
+                <AppText style={styles.idText} translate={false}>
+                    {`${t('ID')}: ${userProfile.id}`}
+                </AppText>
             </View>
 
             {/* Info Cards */}
             <View style={styles.infoSection}>
-                <InfoRow icon="briefcase-outline" label="Loan Category" value={userProfile.loanCategory} />
-                <InfoRow icon="call-outline" label="Phone" value={userProfile.phone} />
-                <InfoRow icon="mail-outline" label="Email" value={userProfile.email} />
-                <InfoRow icon="location-outline" label="Address" value={userProfile.address} />
-                <InfoRow icon="shield-checkmark-outline" label="KYC Status" value={userProfile.kycStatus} isStatus />
+                <InfoRow icon="briefcase-outline" label={t('Loan Category')} value={userProfile.loanCategory} />
+                <InfoRow icon="call-outline" label={t('Phone')} value={userProfile.phone} />
+                <InfoRow icon="mail-outline" label={t('Email')} value={userProfile.email} />
+                <InfoRow icon="location-outline" label={t('Address')} value={userProfile.address} />
+                <InfoRow
+                    icon="shield-checkmark-outline"
+                    label={t('KYC Status')}
+                    value={t(userProfile.kycStatus, userProfile.kycStatus)}
+                    isStatus
+                />
             </View>
         </ScrollView>
 
@@ -74,22 +94,26 @@ export const BeneficiaryProfileScreen = ({ navigation }: any) => {
                 <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
                     <Ionicons name="arrow-back" size={24} color="white" />
                 </TouchableOpacity>
-                <AppText style={styles.headerTitle}>My Profile</AppText>
+                <AppText style={styles.headerTitle}>{t('My Profile')}</AppText>
                 <TouchableOpacity onPress={() => navigation.navigate('EditProfile')} style={styles.editButton}>
                     <Ionicons name="create-outline" size={24} color="white" />
                 </TouchableOpacity>
             </View>
         </SafeAreaView>
-    </View>
-  );
-};const InfoRow = ({ icon, label, value, isStatus }: any) => (
+        </View>
+    );
+};
+
+const InfoRow = ({ icon, label, value, isStatus }: any) => (
     <View style={styles.infoRow}>
         <View style={styles.iconContainer}>
             <Ionicons name={icon} size={20} color="#008080" />
         </View>
         <View style={styles.infoContent}>
             <AppText style={styles.infoLabel}>{label}</AppText>
-            <AppText style={[styles.infoValue, isStatus && styles.statusValue]}>{value}</AppText>
+            <AppText style={[styles.infoValue, isStatus && styles.statusValue]} translate={false}>
+                {value}
+            </AppText>
         </View>
     </View>
 );

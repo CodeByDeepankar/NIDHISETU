@@ -10,16 +10,18 @@ import { AppText } from '@/components/atoms/app-text';
 import { AppButton } from '@/components/atoms/app-button';
 import { InputField } from '@/components/atoms/input-field';
 import { supabase } from '@/lib/supabaseClient';
+import { beneficiaryRepository } from '@/services/api/beneficiaryRepository';
 
 export const EditProfileScreen = ({ navigation }: any) => {
   const profile = useAuthStore((state) => state.profile);
+  const authMobile = useAuthStore((state) => state.mobile);
   const updateProfile = useAuthStore((state) => state.actions.updateProfile);
   const [loading, setLoading] = useState(false);
   const [imageUri, setImageUri] = useState<string | null>(profile?.avatarUrl || null);
 
   const [formData, setFormData] = useState({
     name: profile?.name || '',
-    mobile: profile?.mobile || '',
+    mobile: profile?.mobile || authMobile || '',
     email: (profile as any)?.email || '',
     address: (profile as any)?.village || '', // Using village as address for now
   });
@@ -67,7 +69,12 @@ export const EditProfileScreen = ({ navigation }: any) => {
         buffer[i] = binary.charCodeAt(i);
       }
 
-      const fileName = `${profile?.id || 'anonymous'}/${Date.now()}.jpg`;
+      // Use 'anonymous' folder but identify file by mobile number to ensure uniqueness and persistence
+      // This matches the user's request to keep it in anonymous folder
+      const mobileToUse = formData.mobile || profile?.mobile || authMobile;
+      const normalizedMobile = mobileToUse ? mobileToUse.replace(/[^0-9]/g, '') : 'unknown';
+      const fileName = `anonymous/${normalizedMobile}.jpg`;
+      
       const { error } = await supabase.storage
         .from('profile-images')
         .upload(fileName, buffer, {
@@ -77,8 +84,9 @@ export const EditProfileScreen = ({ navigation }: any) => {
 
       if (error) throw error;
 
+      // Add timestamp to bypass cache
       const { data } = supabase.storage.from('profile-images').getPublicUrl(fileName);
-      return data.publicUrl;
+      return `${data.publicUrl}?t=${Date.now()}`;
     } catch (error) {
       console.error('Upload error:', error);
       throw error;
@@ -97,18 +105,32 @@ export const EditProfileScreen = ({ navigation }: any) => {
         }
       }
 
-      if (profile) {
-          updateProfile({
-              ...profile,
-              name: formData.name,
-              mobile: formData.mobile,
-              avatarUrl: avatarUrl,
-              // email and address are not in UserProfile yet, so we can't save them to store properly without type update
-              // but for now we just update what we can
-              village: formData.address, // Mapping address to village for demo
-              // @ts-ignore
-              email: formData.email,
-          });
+      if (profile || authMobile) {
+        const updatedProfile = {
+            ...(profile || {}),
+            id: profile?.id || authMobile || 'unknown',
+            role: profile?.role || 'beneficiary',
+            name: formData.name,
+            mobile: formData.mobile,
+            avatarUrl: avatarUrl,
+            // email and address are not in UserProfile yet, so we can't save them to store properly without type update
+            // but for now we just update what we can
+            village: formData.address, // Mapping address to village for demo
+            // @ts-ignore
+            email: formData.email,
+        };
+
+        // Save to DB if beneficiary
+        if (updatedProfile.role === 'beneficiary') {
+            try {
+                await beneficiaryRepository.updateProfile(updatedProfile.mobile, updatedProfile);
+            } catch (error) {
+                console.warn('Failed to persist profile to DB:', error);
+                // Continue to update local state so user sees the change
+            }
+        }
+
+        updateProfile(updatedProfile as any);
       }
       
       Alert.alert('Success', 'Profile updated successfully', [

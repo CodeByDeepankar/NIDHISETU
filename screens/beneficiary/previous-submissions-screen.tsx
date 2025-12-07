@@ -4,6 +4,7 @@ import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { StyleSheet, View, TouchableOpacity } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
+import { useT } from 'lingo.dev/react';
 
 import { AppText } from '@/components/atoms/app-text';
 import { SubmissionList } from '@/components/organisms/submission-list';
@@ -16,6 +17,7 @@ export type PreviousSubmissionsScreenProps = NativeStackScreenProps<BeneficiaryD
 export const PreviousSubmissionsScreen = () => {
   const navigation = useNavigation<DrawerNavigationProp<BeneficiaryDrawerParamList>>();
   const { submissions, refresh, isLoading } = useSubmissions();
+  const t = useT();
 
   const handleRetry = (submission: SubmissionEvidence) => {
     navigation.navigate('UploadEvidence', {
@@ -34,7 +36,7 @@ export const PreviousSubmissionsScreen = () => {
         <TouchableOpacity onPress={() => navigation.toggleDrawer()} style={styles.menuButton}>
           <Ionicons name="menu" size={24} color="#1F2937" />
         </TouchableOpacity>
-        <AppText style={styles.headerTitle}>My Submissions</AppText>
+        <AppText style={styles.headerTitle}>{t('My Submissions')}</AppText>
         <View style={{ width: 40 }} />
       </View>
 

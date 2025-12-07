@@ -1,7 +1,18 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { DrawerActions, useNavigation } from '@react-navigation/native';
 import type { DrawerNavigationProp } from '@react-navigation/drawer';
-import { ActivityIndicator, Dimensions, Image, Modal, ScrollView, StyleSheet, TouchableOpacity, TouchableWithoutFeedback, View } from 'react-native';
+import {
+    ActivityIndicator,
+    Dimensions,
+    Image,
+    Modal,
+    ScrollView,
+    StyleSheet,
+    TouchableOpacity,
+    TouchableWithoutFeedback,
+    View,
+} from 'react-native';
+import { useAppLocale, useT } from 'lingo.dev/react';
 
 import { AppIcon } from '@/components/atoms/app-icon';
 import type { IconName } from '@/components/atoms/app-icon';
@@ -18,24 +29,75 @@ type BeneficiaryNavigation = DrawerNavigationProp<BeneficiaryDrawerParamList>;
 const SUPPORTED_LANGUAGES = [
     { code: 'en', label: 'English' },
     { code: 'hi', label: 'हिन्दी (Hindi)' },
+    { code: 'or', label: 'ଓଡ଼ିଆ (Odia)' },
     { code: 'bn', label: 'বাংলা (Bengali)' },
 ] as const;
 
 type LanguageCode = (typeof SUPPORTED_LANGUAGES)[number]['code'];
+type CalculatorRoute = 'EmiCalculator' | 'SubsidyCalculator' | 'EligibilityPrediction';
+
+type MenuItemKey = 'trackLoan' | 'uploadEvidence' | 'geoCamera' | 'notifications' | 'contactOfficer' | 'myProfile';
+
+const menuItems: Array<{ key: MenuItemKey; title: string; icon: IconName; color: string }> = [
+    { key: 'trackLoan', title: 'Track Loan', icon: 'clipboard-text-clock-outline', color: '#A855F7' },
+    { key: 'uploadEvidence', title: 'Upload Evidence', icon: 'cloud-upload-outline', color: '#A855F7' },
+    { key: 'geoCamera', title: 'Geo-Camera', icon: 'camera-marker-outline', color: '#A855F7' },
+    { key: 'notifications', title: 'Notifications', icon: 'bell-outline', color: '#A855F7' },
+    { key: 'contactOfficer', title: 'Contact Officer', icon: 'card-account-phone-outline', color: '#A855F7' },
+    { key: 'myProfile', title: 'My Profile', icon: 'account-circle-outline', color: '#A855F7' },
+];
+
+const trainingItems = [
+    { title: 'Job programs', image: 'https://images.unsplash.com/photo-1521791136064-7986c2920216?auto=format&fit=crop&w=800&q=80' },
+    { title: 'Learning videos', image: 'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?auto=format&fit=crop&w=800&q=80' },
+    { title: 'Government skill centres', image: 'https://images.unsplash.com/photo-1531482615713-2afd69097998?auto=format&fit=crop&w=800&q=80' },
+];
+
+const calculatorItems: Array<{ title: string; desc: string; image: string; route: CalculatorRoute }> = [
+    {
+        title: 'EMI calculator',
+        desc: 'Plan your repayment.',
+        image: 'https://images.unsplash.com/photo-1554224154-26032ffc0d07?auto=format&fit=crop&w=800&q=80',
+        route: 'EmiCalculator',
+    },
+    {
+        title: 'Subsidy calculator',
+        desc: 'Check your benefits.',
+        image: 'https://images.unsplash.com/photo-1509391366360-2e959784a276?auto=format&fit=crop&w=800&q=80',
+        route: 'SubsidyCalculator',
+    },
+    {
+        title: 'Eligibility prediction',
+        desc: 'Know your chances.',
+        image: 'https://images.unsplash.com/photo-1450101499163-c8848c66ca85?auto=format&fit=crop&w=800&q=80',
+        route: 'EligibilityPrediction',
+    },
+];
+
+const grievanceItems = [
+    {
+        title: 'Submit issue',
+        desc: 'Face any problem? Let us know.',
+        image: 'https://images.unsplash.com/photo-1534536281715-e28d76689b4d?auto=format&fit=crop&w=800&q=80',
+    },
+    {
+        title: 'Track complaint',
+        desc: 'Check status of your tickets.',
+        image: 'https://images.unsplash.com/photo-1551836022-d5d88e9218df?auto=format&fit=crop&w=800&q=80',
+    },
+    {
+        title: 'Officer response',
+        desc: 'View replies from officials.',
+        image: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&w=800&q=80',
+    },
+];
 
 export const BeneficiaryDashboardScreen = () => {
     const navigation = useNavigation<BeneficiaryNavigation>();
     const { mode, toggleTheme } = useTheme();
     const profile = useAuthStore((state) => state.profile);
-
-    const menuItems = [
-        { title: 'Track Loan', icon: 'clipboard-text-clock-outline' as IconName, color: '#A855F7' },
-        { title: 'Upload Evidence', icon: 'cloud-upload-outline' as IconName, color: '#A855F7' },
-        { title: 'Geo-Camera', icon: 'camera-marker-outline' as IconName, color: '#A855F7' },
-        { title: 'Notifications', icon: 'bell-outline' as IconName, color: '#A855F7' },
-        { title: 'Contact Officer', icon: 'card-account-phone-outline' as IconName, color: '#A855F7' },
-        { title: 'My Profile', icon: 'account-circle-outline' as IconName, color: '#A855F7' },
-    ];
+    const t = useT();
+    const { locale, setLocale } = useAppLocale();
 
     const defaultGovUpdates: GovernmentUpdate[] = [
         {
@@ -57,7 +119,6 @@ export const BeneficiaryDashboardScreen = () => {
     const [selectedUpdate, setSelectedUpdate] = useState<GovernmentUpdate | null>(null);
     const [isModalVisible, setIsModalVisible] = useState(false);
     const [languageModalVisible, setLanguageModalVisible] = useState(false);
-    const [selectedLanguage, setSelectedLanguage] = useState<LanguageCode>('en');
 
     const iconColor = mode === 'dark' ? '#F9FAFB' : '#333';
     const iconBackground = mode === 'dark' ? '#1F2937' : '#FFFFFF';
@@ -96,13 +157,13 @@ export const BeneficiaryDashboardScreen = () => {
     }, [lastUpdatedAt]);
 
     const formatPublishedAt = useCallback((value?: string) => {
-        if (!value) return 'Live policy brief';
+        if (!value) return t('Live policy brief');
         const date = new Date(value);
         if (Number.isNaN(date.getTime())) {
             return value;
         }
         return date.toLocaleDateString('en-IN', { month: 'short', day: 'numeric', year: 'numeric' });
-    }, []);
+    }, [t]);
 
     const openUpdateDetail = (item: GovernmentUpdate) => {
         setSelectedUpdate(item);
@@ -115,67 +176,34 @@ export const BeneficiaryDashboardScreen = () => {
     };
 
     const handleLanguageSelect = (code: LanguageCode) => {
-        setSelectedLanguage(code);
+        setLocale(code);
         setLanguageModalVisible(false);
     };
 
-  const trainingItems = [
-    { title: 'Job programs', image: 'https://images.unsplash.com/photo-1521791136064-7986c2920216?auto=format&fit=crop&w=800&q=80' },
-    { title: 'Learning videos', image: 'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?auto=format&fit=crop&w=800&q=80' },
-    { title: 'Government skill centres', image: 'https://images.unsplash.com/photo-1531482615713-2afd69097998?auto=format&fit=crop&w=800&q=80' },
-  ];
-
-    const calculatorItems: Array<{ title: string; desc: string; image: string; route: keyof BeneficiaryDrawerParamList }> = [
-        {
-            title: 'EMI calculator',
-            desc: 'Plan your repayment.',
-            image: 'https://images.unsplash.com/photo-1554224154-26032ffc0d07?auto=format&fit=crop&w=800&q=80',
-            route: 'EmiCalculator',
-        },
-        {
-            title: 'Subsidy calculator',
-            desc: 'Check your benefits.',
-            image: 'https://images.unsplash.com/photo-1509391366360-2e959784a276?auto=format&fit=crop&w=800&q=80',
-            route: 'SubsidyCalculator',
-        },
-        {
-            title: 'Eligibility prediction',
-            desc: 'Know your chances.',
-            image: 'https://images.unsplash.com/photo-1450101499163-c8848c66ca85?auto=format&fit=crop&w=800&q=80',
-            route: 'EligibilityPrediction',
-        },
-    ];
-
-  const grievanceItems = [
-    { title: 'Submit issue', desc: 'Face any problem? Let us know.', image: 'https://images.unsplash.com/photo-1534536281715-e28d76689b4d?auto=format&fit=crop&w=800&q=80' },
-    { title: 'Track complaint', desc: 'Check status of your tickets.', image: 'https://images.unsplash.com/photo-1551836022-d5d88e9218df?auto=format&fit=crop&w=800&q=80' },
-    { title: 'Officer response', desc: 'View replies from officials.', image: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&w=800&q=80' },
-  ];
-
-  const handleMenuPress = (title: string) => {
-    switch (title) {
-      case 'Track Loan':
-        navigation.navigate('PreviousSubmissions' as never);
-        break;
-      case 'Upload Evidence':
-        navigation.navigate('UploadEvidence' as never);
-        break;
-      case 'Geo-Camera':
-        navigation.navigate('LoanEvidenceCamera' as never);
-        break;
-      case 'Notifications':
-        navigation.navigate('Notifications' as never);
-        break;
-      case 'Contact Officer':
-        navigation.navigate('ContactOfficer' as never);
-        break;
-      case 'My Profile':
-        navigation.navigate('BeneficiaryProfile' as never);
-        break;
-      default:
-        console.warn('Unknown menu item:', title);
-    }
-  };
+        const handleMenuPress = (key: MenuItemKey) => {
+        switch (key) {
+            case 'trackLoan':
+                    navigation.navigate('PreviousSubmissions' as never);
+                    break;
+            case 'uploadEvidence':
+                    navigation.navigate('UploadEvidence' as never);
+                    break;
+            case 'geoCamera':
+                    navigation.navigate('LoanEvidenceCamera' as never);
+                    break;
+            case 'notifications':
+                    navigation.navigate('Notifications' as never);
+                    break;
+            case 'contactOfficer':
+                    navigation.navigate('ContactOfficer' as never);
+                    break;
+            case 'myProfile':
+                    navigation.navigate('BeneficiaryProfile' as never);
+                    break;
+                default:
+                    console.warn('Unknown menu item:', key);
+            }
+        };
 
     return (
         <View style={styles.container}>
@@ -193,7 +221,7 @@ export const BeneficiaryDashboardScreen = () => {
                             {profile?.name ?? 'Gokul Kumari'}
                         </AppText>
                         <AppText style={styles.greeting} numberOfLines={1}>
-                            Good morning
+                            {t('Good morning')}
                         </AppText>
                     </View>
                 </View>
@@ -225,29 +253,33 @@ export const BeneficiaryDashboardScreen = () => {
 
             <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
                 <View style={styles.grid}>
-                    {menuItems.map((item, index) => (
-                        <TouchableOpacity key={index} style={styles.card} onPress={() => handleMenuPress(item.title)}>
+                    {menuItems.map((item) => (
+                        <TouchableOpacity key={item.key} style={styles.card} onPress={() => handleMenuPress(item.key)}>
                             <View style={styles.iconContainer}>
                                 <AppIcon name={item.icon} size={32} color={item.color} />
                             </View>
-                            <AppText style={styles.cardTitle}>{item.title}</AppText>
-                            <AppText style={styles.viewStatus}>View Status</AppText>
+                            <AppText style={styles.cardTitle}>{t(item.title)}</AppText>
+                            <AppText style={styles.viewStatus}>{t('View Status')}</AppText>
                         </TouchableOpacity>
                     ))}
                 </View>
 
                 <View style={styles.section}>
                     <View style={styles.sectionHeader}>
-                        <AppText style={styles.sectionTitle}>Government Updates</AppText>
+                        <AppText style={styles.sectionTitle}>{t('Government Updates')}</AppText>
                         <TouchableOpacity onPress={() => fetchGovernmentUpdates()} disabled={updatesLoading} style={styles.refreshButton}>
                             <AppIcon name="refresh" size={18} color={updatesLoading ? '#A1A1AA' : '#2563EB'} />
                             <AppText style={[styles.refreshText, updatesLoading && styles.refreshDisabled]}>
-                                {updatesLoading ? 'Refreshing…' : 'Refresh'}
+                                {updatesLoading ? t('Refreshing…') : t('Refresh')}
                             </AppText>
                         </TouchableOpacity>
                     </View>
-                    {lastUpdatedLabel && <AppText style={styles.statusText}>Updated {lastUpdatedLabel}</AppText>}
-                    {updatesError && <AppText style={styles.errorText}>{updatesError}</AppText>}
+                    {lastUpdatedLabel && (
+                      <AppText style={styles.statusText}>
+                        {t('Updated')} {lastUpdatedLabel}
+                      </AppText>
+                    )}
+                    {updatesError && <AppText style={styles.errorText}>{t(updatesError)}</AppText>}
                     <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.horizontalScroll}>
                         {governmentUpdates.map((item, index) => (
                             <View key={`${item.title}-${index}`} style={[styles.horizontalCardWrapper, { width: cardWidth }]}>
@@ -269,24 +301,24 @@ export const BeneficiaryDashboardScreen = () => {
                 </View>
 
                 <View style={styles.section}>
-                    <AppText style={styles.sectionTitle}>Training & Skill Development</AppText>
+                    <AppText style={styles.sectionTitle}>{t('Training & Skill Development')}</AppText>
                     <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.horizontalScroll}>
                         {trainingItems.map((item, index) => (
                             <View key={index} style={styles.horizontalCardWrapper}>
-                                <InfoCard title={item.title} image={item.image} variant="overlay" />
+                                <InfoCard title={t(item.title)} image={item.image} variant="overlay" />
                             </View>
                         ))}
                     </ScrollView>
                 </View>
 
                 <View style={styles.section}>
-                    <AppText style={styles.sectionTitle}>Financial Calculator</AppText>
+                    <AppText style={styles.sectionTitle}>{t('Financial Calculator')}</AppText>
                     <View style={styles.verticalList}>
                         {calculatorItems.map((item, index) => (
                             <InfoCard
                                 key={index}
-                                title={item.title}
-                                description={item.desc}
+                                title={t(item.title)}
+                                description={t(item.desc)}
                                 image={item.image}
                                 variant="standard"
                                 style={{ marginBottom: 16 }}
@@ -297,10 +329,17 @@ export const BeneficiaryDashboardScreen = () => {
                 </View>
 
                 <View style={styles.section}>
-                    <AppText style={styles.sectionTitle}>Complaint / Grievance Redressal</AppText>
+                    <AppText style={styles.sectionTitle}>{t('Complaint / Grievance Redressal')}</AppText>
                     <View style={styles.verticalList}>
                         {grievanceItems.map((item, index) => (
-                            <InfoCard key={index} title={item.title} description={item.desc} image={item.image} variant="standard" style={{ marginBottom: 16 }} />
+                            <InfoCard
+                                key={index}
+                                title={t(item.title)}
+                                description={t(item.desc)}
+                                image={item.image}
+                                variant="standard"
+                                style={{ marginBottom: 16 }}
+                            />
                         ))}
                     </View>
                 </View>
@@ -314,7 +353,7 @@ export const BeneficiaryDashboardScreen = () => {
                         <TouchableWithoutFeedback>
                             <View style={styles.modalContent}>
                                 <View style={styles.modalHeader}>
-                                    <AppText style={styles.modalTitle}>Government Update</AppText>
+                                    <AppText style={styles.modalTitle}>{t('Government Update')}</AppText>
                                     <TouchableOpacity onPress={closeModal}>
                                         <AppIcon name="close" size={22} color="#111827" />
                                     </TouchableOpacity>
@@ -324,11 +363,11 @@ export const BeneficiaryDashboardScreen = () => {
                                         <Image source={{ uri: selectedUpdate.imageUrl }} style={styles.modalImage} resizeMode="cover" />
                                         <AppText style={styles.modalUpdateTitle}>{selectedUpdate.title}</AppText>
                                         <AppText style={styles.modalMeta}>
-                                            {selectedUpdate.source || 'MSME Ministry'} • {formatPublishedAt(selectedUpdate.publishedAt)}
+                                            {selectedUpdate.source || t('MSME Ministry')} • {formatPublishedAt(selectedUpdate.publishedAt)}
                                         </AppText>
                                         <AppText style={styles.modalDescription}>{selectedUpdate.description}</AppText>
                                         <AppButton
-                                            label="Get Similar Updates"
+                                            label={t('Get Similar Updates')}
                                             onPress={() => {
                                                 fetchGovernmentUpdates(selectedUpdate.title);
                                                 closeModal();
@@ -350,15 +389,15 @@ export const BeneficiaryDashboardScreen = () => {
                     <View style={styles.modalOverlay}>
                         <TouchableWithoutFeedback>
                             <View style={styles.languageModalContent}>
-                                <AppText style={styles.languageModalTitle}>Choose your language</AppText>
+                                <AppText style={styles.languageModalTitle}>{t('Choose your language')}</AppText>
                                 {SUPPORTED_LANGUAGES.map((lang) => (
                                     <TouchableOpacity
                                         key={lang.code}
-                                        style={[styles.languageOption, selectedLanguage === lang.code && styles.languageOptionActive]}
+                                        style={[styles.languageOption, locale === lang.code && styles.languageOptionActive]}
                                         onPress={() => handleLanguageSelect(lang.code)}
                                     >
                                         <AppText style={styles.languageLabel}>{lang.label}</AppText>
-                                        {selectedLanguage === lang.code ? <AppIcon name="check" size={18} color="#22C55E" /> : null}
+                                        {locale === lang.code ? <AppIcon name="check" size={18} color="#22C55E" /> : null}
                                     </TouchableOpacity>
                                 ))}
                             </View>

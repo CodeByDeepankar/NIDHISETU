@@ -1,5 +1,6 @@
 import type { FlatListProps } from 'react-native';
 import { FlatList, RefreshControl, StyleProp, StyleSheet, View, ViewStyle } from 'react-native';
+import { useT } from 'lingo.dev/react';
 
 import { AppText } from '@/components/atoms/app-text';
 import { SubmissionCard } from '@/components/molecules/submission-card';
@@ -31,6 +32,7 @@ export const SubmissionList = ({
   ...handlers
 }: SubmissionListProps) => {
   const theme = useAppTheme();
+  const t = useT();
 
   return (
     <FlatList
@@ -48,10 +50,10 @@ export const SubmissionList = ({
       ListEmptyComponent={
         <View style={styles.emptyState}>
           <AppText variant="titleMedium" color="muted">
-            No submissions yet
+            {t('No submissions yet')}
           </AppText>
           <AppText variant="bodyMedium" color="muted">
-            Capture and upload evidence to see them here.
+            {t('Capture and upload evidence to see them here.')}
           </AppText>
         </View>
       }

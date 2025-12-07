@@ -123,7 +123,71 @@ const getProfileByMobile = async (mobile: string): Promise<BeneficiaryProfile | 
     district: record.district || '',
     bank: record.bankName,
     scheme: record.schemeName || '',
+    avatarUrl: record.metadata?.avatarUrl,
   };
+};
+
+const updateProfile = async (mobile: string, updates: Partial<BeneficiaryProfile>): Promise<void> => {
+  if (!supabase) throw new Error('Supabase not initialized');
+  
+  const normalizedMobile = normalizeMobile(mobile);
+  if (!normalizedMobile) {
+      console.warn('Invalid mobile number provided to updateProfile');
+      return;
+  }
+
+  // Fetch current metadata first to merge
+  const { data: currentRecord, error: fetchError } = await supabase
+    .from(COLLECTION_NAME)
+    .select('metadata')
+    .eq('id', normalizedMobile)
+    .single();
+
+  if (fetchError || !currentRecord) {
+    console.warn(`Beneficiary not found for mobile: ${normalizedMobile}. Creating new record.`);
+    // If record doesn't exist, we create a minimal one
+    const metadata = {
+        beneficiaryUid: normalizedMobile,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+        status: 'draft',
+        docCount: 0,
+        completionPercent: 0,
+        avatarUrl: updates.avatarUrl
+    };
+    
+    const { error: insertError } = await supabase
+        .from(COLLECTION_NAME)
+        .insert({
+            id: normalizedMobile,
+            mobile: normalizedMobile,
+            full_name: updates.name || 'Unknown',
+            metadata: metadata
+        });
+        
+    if (insertError) throw insertError;
+    return;
+  }
+
+  const updatedMetadata = {
+    ...currentRecord.metadata,
+    ...(updates.avatarUrl ? { avatarUrl: updates.avatarUrl } : {}),
+    updatedAt: new Date().toISOString(),
+  };
+
+  const dbUpdates: any = {
+    metadata: updatedMetadata,
+  };
+  
+  if (updates.name) dbUpdates.full_name = updates.name;
+  if (updates.village) dbUpdates.village = updates.village;
+
+  const { error } = await supabase
+    .from(COLLECTION_NAME)
+    .update(dbUpdates)
+    .eq('id', normalizedMobile);
+
+  if (error) throw error;
 };
 
 const listRecords = async (): Promise<BeneficiaryRecord[]> => {
@@ -259,6 +323,7 @@ export const beneficiaryRepository = {
   saveDraft,
   getRecordByMobile,
   getProfileByMobile,
+  updateProfile,
   listRecords,
   updateStatus,
   addNote,

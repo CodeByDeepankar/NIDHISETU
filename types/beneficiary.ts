@@ -92,6 +92,7 @@ export interface BeneficiaryMetadata {
   docCount: number;
   completionPercent: number;
   createdBy?: OfficerContext;
+  avatarUrl?: string;
 }
 
 export interface BeneficiaryRecord extends BeneficiaryFormPayload {

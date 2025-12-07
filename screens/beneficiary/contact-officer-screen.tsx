@@ -2,10 +2,12 @@ import React from 'react';
 import { View, StyleSheet, ScrollView, TouchableOpacity, Image, Linking } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
+import { useT } from 'lingo.dev/react';
 import { AppText } from '@/components/atoms/app-text';
 import { AppButton } from '@/components/atoms/app-button';
 
 export const ContactOfficerScreen = ({ navigation }: any) => {
+  const t = useT();
   const officer = {
     name: 'Rajesh Gupta',
     role: 'Nodal Officer',
@@ -30,7 +32,7 @@ export const ContactOfficerScreen = ({ navigation }: any) => {
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
           <Ionicons name="arrow-back" size={24} color="#333" />
         </TouchableOpacity>
-        <AppText style={styles.headerTitle}>Contact Officer</AppText>
+        <AppText style={styles.headerTitle}>{t('Contact Officer')}</AppText>
         <View style={{ width: 40 }} />
       </View>
 
@@ -38,10 +40,10 @@ export const ContactOfficerScreen = ({ navigation }: any) => {
         <View style={styles.card}>
           <View style={styles.profileSection}>
             <Image source={{ uri: officer.avatar }} style={styles.avatar} />
-            <AppText style={styles.name}>{officer.name}</AppText>
-            <AppText style={styles.role}>{officer.role}</AppText>
+            <AppText style={styles.name} translate={false}>{officer.name}</AppText>
+            <AppText style={styles.role}>{t(officer.role)}</AppText>
             <View style={styles.badge}>
-              <AppText style={styles.badgeText}>{officer.district}</AppText>
+              <AppText style={styles.badgeText} translate={false}>{officer.district}</AppText>
             </View>
           </View>
 
@@ -50,27 +52,27 @@ export const ContactOfficerScreen = ({ navigation }: any) => {
           <View style={styles.infoSection}>
             <View style={styles.infoRow}>
               <Ionicons name="call-outline" size={20} color="#666" />
-              <AppText style={styles.infoText}>{officer.phone}</AppText>
+              <AppText style={styles.infoText} translate={false}>{officer.phone}</AppText>
             </View>
             <View style={styles.infoRow}>
               <Ionicons name="mail-outline" size={20} color="#666" />
-              <AppText style={styles.infoText}>{officer.email}</AppText>
+              <AppText style={styles.infoText} translate={false}>{officer.email}</AppText>
             </View>
             <View style={styles.infoRow}>
               <Ionicons name="location-outline" size={20} color="#666" />
-              <AppText style={styles.infoText}>{officer.officeAddress}</AppText>
+              <AppText style={styles.infoText} translate={false}>{officer.officeAddress}</AppText>
             </View>
           </View>
 
           <View style={styles.actionButtons}>
             <AppButton 
-              label="Call Officer" 
+              label={t('Call Officer')}
               onPress={handleCall} 
               style={styles.callButton}
               icon="phone"
             />
             <AppButton 
-              label="Send Email" 
+              label={t('Send Email')}
               onPress={handleEmail} 
               style={styles.emailButton}
               textStyle={{ color: '#008080' }}
@@ -81,9 +83,9 @@ export const ContactOfficerScreen = ({ navigation }: any) => {
 
         <View style={styles.helpCard}>
           <Ionicons name="help-circle-outline" size={32} color="#008080" />
-          <AppText style={styles.helpTitle}>Need more help?</AppText>
+          <AppText style={styles.helpTitle}>{t('Need more help?')}</AppText>
           <AppText style={styles.helpText}>
-            You can also visit the nearest Common Service Centre (CSC) for assistance with your application.
+            {t('You can also visit the nearest Common Service Centre (CSC) for assistance with your application.')}
           </AppText>
         </View>
       </ScrollView>

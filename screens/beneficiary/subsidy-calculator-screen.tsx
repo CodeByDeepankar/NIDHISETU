@@ -7,6 +7,7 @@ import Svg, { Path } from 'react-native-svg';
 
 import { AppButton } from '@/components/atoms/app-button';
 import { AppText } from '@/components/atoms/app-text';
+import { useT } from 'lingo.dev/react';
 
 const { width } = Dimensions.get('window');
 
@@ -20,6 +21,7 @@ type SubsidyResult = {
 type UnitCategory = 'General' | 'Priority (Women / SC-ST / Hills)';
 
 export const SubsidyCalculatorScreen = ({ navigation }: any) => {
+  const t = useT();
   const [projectCost, setProjectCost] = useState('250000');
   const [baseRate, setBaseRate] = useState('15');
   const [maxCap, setMaxCap] = useState('50000');
@@ -28,9 +30,9 @@ export const SubsidyCalculatorScreen = ({ navigation }: any) => {
 
   const subsidyHint = useMemo(() => {
     return unitCategory === 'Priority (Women / SC-ST / Hills)'
-      ? 'Priority units automatically get +10% support'
-      : 'General category uses the entered base rate';
-  }, [unitCategory]);
+      ? t('Priority units automatically get +10% support')
+      : t('General category uses the entered base rate');
+  }, [t, unitCategory]);
 
   const calculateSubsidy = () => {
     const cost = parseFloat(projectCost);
@@ -71,7 +73,7 @@ export const SubsidyCalculatorScreen = ({ navigation }: any) => {
           <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
             <Ionicons name="arrow-back" size={24} color="white" />
           </TouchableOpacity>
-          <AppText style={styles.headerTitle}>Subsidy Calculator</AppText>
+          <AppText style={styles.headerTitle}>{t('Subsidy Calculator')}</AppText>
           <View style={{ width: 40 }} />
         </View>
       </SafeAreaView>
@@ -79,40 +81,40 @@ export const SubsidyCalculatorScreen = ({ navigation }: any) => {
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
         <View style={styles.card}>
           <View style={styles.inputGroup}>
-            <AppText style={styles.label}>Project Cost (₹)</AppText>
+            <AppText style={styles.label}>{t('Project Cost (₹)')}</AppText>
             <TextInput
               style={styles.input}
               value={projectCost}
               onChangeText={setProjectCost}
               keyboardType="numeric"
-              placeholder="Enter project cost"
+              placeholder={t('Enter project cost')}
             />
           </View>
 
           <View style={styles.inputGroup}>
-            <AppText style={styles.label}>Eligible Subsidy Rate (%)</AppText>
+            <AppText style={styles.label}>{t('Eligible Subsidy Rate (%)')}</AppText>
             <TextInput
               style={styles.input}
               value={baseRate}
               onChangeText={setBaseRate}
               keyboardType="numeric"
-              placeholder="Base rate"
+              placeholder={t('Base rate')}
             />
           </View>
 
           <View style={styles.inputGroup}>
-            <AppText style={styles.label}>Maximum Subsidy Cap (₹)</AppText>
+            <AppText style={styles.label}>{t('Maximum Subsidy Cap (₹)')}</AppText>
             <TextInput
               style={styles.input}
               value={maxCap}
               onChangeText={setMaxCap}
               keyboardType="numeric"
-              placeholder="Upper cap"
+              placeholder={t('Upper cap')}
             />
           </View>
 
           <View style={styles.inputGroup}>
-            <AppText style={styles.label}>Unit Category</AppText>
+            <AppText style={styles.label}>{t('Unit Category')}</AppText>
             <View style={styles.toggleContainer}>
               {(['General', 'Priority (Women / SC-ST / Hills)'] as UnitCategory[]).map((category) => (
                 <TouchableOpacity
@@ -121,7 +123,7 @@ export const SubsidyCalculatorScreen = ({ navigation }: any) => {
                   onPress={() => setUnitCategory(category)}
                 >
                   <AppText style={[styles.toggleText, unitCategory === category && styles.toggleTextActive]}>
-                    {category === 'General' ? 'General' : 'Priority'}
+                    {category === 'General' ? t('General') : t('Priority')}
                   </AppText>
                 </TouchableOpacity>
               ))}
@@ -129,29 +131,42 @@ export const SubsidyCalculatorScreen = ({ navigation }: any) => {
             <AppText style={styles.helperText}>{subsidyHint}</AppText>
           </View>
 
-          <AppButton label="Estimate Subsidy" onPress={calculateSubsidy} style={styles.calculateButton} labelStyle={styles.calculateButtonText} />
+          <AppButton
+            label={t('Estimate Subsidy')}
+            onPress={calculateSubsidy}
+            style={styles.calculateButton}
+            labelStyle={styles.calculateButtonText}
+          />
         </View>
 
         {result && (
           <View style={styles.resultCard}>
-            <AppText style={styles.resultTitle}>Eligible Support</AppText>
+            <AppText style={styles.resultTitle}>{t('Eligible Support')}</AppText>
             <View style={styles.resultRow}>
-              <AppText style={styles.resultLabel}>Calculated Subsidy</AppText>
-              <AppText style={styles.resultValue}>{formatted(result.subsidy)}</AppText>
+              <AppText style={styles.resultLabel}>{t('Calculated Subsidy')}</AppText>
+              <AppText style={styles.resultValue} translate={false}>
+                {formatted(result.subsidy)}
+              </AppText>
             </View>
             <View style={styles.resultRow}>
-              <AppText style={styles.resultLabel}>Subsidy after Cap</AppText>
-              <AppText style={styles.resultValue}>{formatted(result.cappedSubsidy)}</AppText>
+              <AppText style={styles.resultLabel}>{t('Subsidy after Cap')}</AppText>
+              <AppText style={styles.resultValue} translate={false}>
+                {formatted(result.cappedSubsidy)}
+              </AppText>
             </View>
             <View style={styles.resultRow}>
-              <AppText style={styles.resultLabel}>Net Investment (after subsidy)</AppText>
-              <AppText style={styles.resultValue}>{formatted(result.netInvestment)}</AppText>
+              <AppText style={styles.resultLabel}>{t('Net Investment (after subsidy)')}</AppText>
+              <AppText style={styles.resultValue} translate={false}>
+                {formatted(result.netInvestment)}
+              </AppText>
             </View>
             <View style={styles.resultRow}>
-              <AppText style={styles.resultLabel}>Effective Rate Considered</AppText>
-              <AppText style={styles.resultValue}>{result.effectiveRate.toFixed(1)}%</AppText>
+              <AppText style={styles.resultLabel}>{t('Effective Rate Considered')}</AppText>
+              <AppText style={styles.resultValue} translate={false}>
+                {result.effectiveRate.toFixed(1)}%
+              </AppText>
             </View>
-            <AppText style={styles.caption}>Use these figures while preparing DPR or uploading subsidy evidence.</AppText>
+            <AppText style={styles.caption}>{t('Use these figures while preparing DPR or uploading subsidy evidence.')}</AppText>
           </View>
         )}
       </ScrollView>

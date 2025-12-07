@@ -6,10 +6,12 @@ import { Ionicons } from '@expo/vector-icons';
 import Svg, { Path } from 'react-native-svg';
 import { AppText } from '@/components/atoms/app-text';
 import { AppButton } from '@/components/atoms/app-button';
+import { useT } from 'lingo.dev/react';
 
 const { width } = Dimensions.get('window');
 
 export const EmiCalculatorScreen = ({ navigation }: any) => {
+  const t = useT();
   const [amount, setAmount] = useState('50000');
   const [rate, setRate] = useState('12');
   const [tenure, setTenure] = useState('12');
@@ -64,7 +66,7 @@ export const EmiCalculatorScreen = ({ navigation }: any) => {
           <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
             <Ionicons name="arrow-back" size={24} color="white" />
           </TouchableOpacity>
-          <AppText style={styles.headerTitle}>EMI Calculator</AppText>
+          <AppText style={styles.headerTitle}>{t('EMI Calculator')}</AppText>
           <View style={{ width: 40 }} />
         </View>
       </SafeAreaView>
@@ -72,56 +74,56 @@ export const EmiCalculatorScreen = ({ navigation }: any) => {
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
         <View style={styles.card}>
           <View style={styles.inputGroup}>
-            <AppText style={styles.label}>Loan Amount (₹)</AppText>
+            <AppText style={styles.label}>{t('Loan Amount (₹)')}</AppText>
             <TextInput
               style={styles.input}
               value={amount}
               onChangeText={setAmount}
               keyboardType="numeric"
-              placeholder="Enter amount"
+              placeholder={t('Enter amount')}
             />
           </View>
 
           <View style={styles.inputGroup}>
-            <AppText style={styles.label}>Annual Interest Rate (%)</AppText>
+            <AppText style={styles.label}>{t('Annual Interest Rate (%)')}</AppText>
             <TextInput
               style={styles.input}
               value={rate}
               onChangeText={setRate}
               keyboardType="numeric"
-              placeholder="Enter rate"
+              placeholder={t('Enter rate')}
             />
           </View>
 
           <View style={styles.inputGroup}>
-            <AppText style={styles.label}>Tenure</AppText>
+            <AppText style={styles.label}>{t('Tenure')}</AppText>
             <View style={styles.tenureContainer}>
                 <TextInput
                     style={[styles.input, { flex: 1, marginBottom: 0 }]}
                     value={tenure}
                     onChangeText={setTenure}
                     keyboardType="numeric"
-                    placeholder="Enter tenure"
+                    placeholder={t('Enter tenure')}
                 />
                 <View style={styles.toggleContainer}>
                     <TouchableOpacity
                     style={[styles.toggleButton, tenureType === 'Months' && styles.toggleActive]}
                     onPress={() => setTenureType('Months')}
                     >
-                    <AppText style={[styles.toggleText, tenureType === 'Months' && styles.toggleTextActive]}>Months</AppText>
+                    <AppText style={[styles.toggleText, tenureType === 'Months' && styles.toggleTextActive]}>{t('Months')}</AppText>
                     </TouchableOpacity>
                     <TouchableOpacity
                     style={[styles.toggleButton, tenureType === 'Years' && styles.toggleActive]}
                     onPress={() => setTenureType('Years')}
                     >
-                    <AppText style={[styles.toggleText, tenureType === 'Years' && styles.toggleTextActive]}>Years</AppText>
+                    <AppText style={[styles.toggleText, tenureType === 'Years' && styles.toggleTextActive]}>{t('Years')}</AppText>
                     </TouchableOpacity>
                 </View>
             </View>
           </View>
 
           <AppButton
-            label="Calculate EMI"
+            label={t('Calculate EMI')}
             onPress={calculateEMI}
             style={styles.calculateButton}
             textStyle={styles.calculateButtonText}
@@ -130,20 +132,20 @@ export const EmiCalculatorScreen = ({ navigation }: any) => {
 
         {result && (
           <View style={styles.resultCard}>
-            <AppText style={styles.resultTitle}>Results</AppText>
+            <AppText style={styles.resultTitle}>{t('Results')}</AppText>
             
             <View style={styles.resultRow}>
-              <AppText style={styles.resultLabel}>Monthly EMI</AppText>
+              <AppText style={styles.resultLabel}>{t('Monthly EMI')}</AppText>
               <AppText style={styles.resultValue}>₹ {result.emi.toLocaleString()}</AppText>
             </View>
             
             <View style={styles.resultRow}>
-              <AppText style={styles.resultLabel}>Total Interest</AppText>
+              <AppText style={styles.resultLabel}>{t('Total Interest')}</AppText>
               <AppText style={styles.resultValue}>₹ {result.interest.toLocaleString()}</AppText>
             </View>
             
             <View style={styles.resultRow}>
-              <AppText style={styles.resultLabel}>Total Amount Payable</AppText>
+              <AppText style={styles.resultLabel}>{t('Total Amount Payable')}</AppText>
               <AppText style={styles.resultValue}>₹ {result.total.toLocaleString()}</AppText>
             </View>
           </View>

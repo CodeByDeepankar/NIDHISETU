@@ -1,5 +1,6 @@
-// App.js
-import React, { useState } from 'react';
+﻿ // App.js
+
+import React, { useState } from "react";
 import {
   SafeAreaView,
   View,
@@ -7,11 +8,21 @@ import {
   ScrollView,
   TouchableOpacity,
   StyleSheet,
-} from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
-import { Feather, MaterialIcons, MaterialCommunityIcons } from '@expo/vector-icons';
+} from "react-native";
 
-// icon shortcuts
+import { LinearGradient } from "expo-linear-gradient";
+import {
+  Feather,
+  MaterialIcons,
+  MaterialCommunityIcons,
+} from "@expo/vector-icons";
+
+// ❗ CORRECT IMPORTS FOR TRANSLATION
+import LocalizeProvider from "./src/i18n/LocalizeProvider";
+import { useT, useAppLocale } from "lingo.dev/react"; // resolved by shim
+import LanguageSwitcher from "./src/components/LanguageSwitcher";
+
+// ---------------- ICON SHORTCUTS ----------------
 const Icon = {
   Bell: (props) => <Feather name="bell" {...props} />,
   Settings: (props) => <Feather name="settings" {...props} />,
@@ -31,26 +42,31 @@ const Icon = {
   Upload: (props) => <Feather name="upload" {...props} />,
   Camera: (props) => <Feather name="camera" {...props} />,
   Receipt: (props) => <MaterialIcons name="receipt" {...props} />,
-  Building: (props) => <MaterialCommunityIcons name="office-building" {...props} />,
+  Building: (props) => (
+    <MaterialCommunityIcons name="office-building" {...props} />
+  ),
 };
 
+// ---------------- UPLOAD ITEM COMPONENT ----------------
 function UploadItem({ title, status, isLast, textMain, textSub, isDark }) {
+  const t = useT();
+
   const getIcon = () => {
     switch (title) {
-      case 'Asset Photo':
-      case 'Selfie with Asset':
+      case "Asset Photo":
+      case "Selfie with Asset":
         return Icon.Camera;
-      case 'Invoice/Bill':
+      case "Invoice/Bill":
         return Icon.Receipt;
-      case 'Workshop Photo':
+      case "Workshop Photo":
         return Icon.Building;
       default:
         return Icon.FileText;
     }
   };
 
-  const rowBg = isDark ? '#111827' : '#FFFFFF';
-  const rowBorder = isDark ? '#334155' : '#F3F4F6';
+  const rowBg = isDark ? "#111827" : "#FFFFFF";
+  const rowBorder = isDark ? "#334155" : "#F3F4F6";
   const ItemIcon = getIcon();
 
   return (
@@ -61,43 +77,39 @@ function UploadItem({ title, status, isLast, textMain, textSub, isDark }) {
         { backgroundColor: rowBg, borderColor: rowBorder },
       ]}
     >
-      {/* icon mini background – always light blue */}
-      <View
-        style={[
-          styles.uploadIconWrap,
-          { backgroundColor: '#DBEAFE' },
-        ]}
-      >
+      <View style={[styles.uploadIconWrap, { backgroundColor: "#DBEAFE" }]}>
         <ItemIcon size={22} color="#2563EB" />
       </View>
 
       <View style={{ flex: 1 }}>
-        <Text style={[styles.uploadTitle, { color: textMain }]}>{title}</Text>
+        <Text style={[styles.uploadTitle, { color: textMain }]}>
+          {t(title)}
+        </Text>
 
-        <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-          {status === 'not-uploaded' && (
+        <View style={{ flexDirection: "row", alignItems: "center" }}>
+          {status === "not-uploaded" && (
             <View style={styles.badgeOrange}>
               <Text
                 style={[
                   styles.badgeOrangeText,
-                  { color: isDark ? '#FF9A5F' : '#C2410C' },
+                  { color: isDark ? "#FF9A5F" : "#C2410C" },
                 ]}
               >
-                Not Uploaded
+                {t("Not Uploaded")}
               </Text>
             </View>
           )}
 
-          {status === 'uploaded' && (
+          {status === "uploaded" && (
             <View style={styles.badgeGreen}>
               <Icon.CheckCircle size={12} color="#047857" />
-              <Text style={styles.badgeGreenText}> Uploaded</Text>
+              <Text style={styles.badgeGreenText}> {t("Uploaded")}</Text>
             </View>
           )}
 
-          {status === 'pending' && (
+          {status === "pending" && (
             <View style={styles.badgeBlue}>
-              <Text style={styles.badgeBlueText}>Pending Review</Text>
+              <Text style={styles.badgeBlueText}>{t("Pending Review")}</Text>
             </View>
           )}
         </View>
@@ -107,61 +119,63 @@ function UploadItem({ title, status, isLast, textMain, textSub, isDark }) {
         style={[
           styles.uploadButton,
           {
-            backgroundColor: isDark ? '#0F172A' : '#FFFFFF',
-            borderColor: isDark ? '#334155' : '#DBEAFE',
+            backgroundColor: isDark ? "#0F172A" : "#FFFFFF",
+            borderColor: isDark ? "#334155" : "#DBEAFE",
           },
         ]}
       >
         <Icon.Upload size={16} color="#2563EB" />
-        <Text style={[styles.uploadButtonText, { color: textMain }]}> Upload</Text>
+        <Text style={[styles.uploadButtonText, { color: textMain }]}>
+          {" "}
+          {t("Upload")}
+        </Text>
       </TouchableOpacity>
     </View>
   );
 }
 
-export default function App() {
-  const [activeTab, setActiveTab] = useState('home');
+// ---------------- MAIN UI COMPONENT ----------------
+function MainApp() {
+  const [activeTab, setActiveTab] = useState("home");
   const [isDashboardOpen, setIsDashboardOpen] = useState(false);
   const [isDark, setIsDark] = useState(false);
 
   const toggleTheme = () => setIsDark(!isDark);
 
-  // theme helpers
-  const cardBg = isDark ? '#1E293B' : '#FFFFFF';
-  const cardBorder = isDark ? '#334155' : '#E5E7EB';
-  const textMain = isDark ? '#F9FAFB' : '#111827';
-  const textSub = isDark ? '#CBD5E1' : '#6B7280';
+  // LOCALIZATION HOOKS
+  const t = useT();
+  const { setLocale } = useAppLocale();
 
+  // THEME HELPERS
+  const cardBg = isDark ? "#1E293B" : "#FFFFFF";
+  const cardBorder = isDark ? "#334155" : "#E5E7EB";
+  const textMain = isDark ? "#F9FAFB" : "#111827";
+  const textSub = isDark ? "#CBD5E1" : "#6B7280";
+
+  // ---------------- RENDER ----------------
   return (
     <SafeAreaView style={styles.safeArea}>
       <View
         style={[
           styles.root,
-          { backgroundColor: isDark ? '#0F172A' : '#F3F4F6' },
+          { backgroundColor: isDark ? "#0F172A" : "#F3F4F6" },
         ]}
       >
-        {/* MAIN CONTENT */}
-        <ScrollView
-          contentContainerStyle={styles.scrollContent}
-          showsVerticalScrollIndicator={false}
-        >
-          {/* HEADER */}
+        <ScrollView contentContainerStyle={styles.scrollContent}>
+          {/* ---------------- HEADER ---------------- */}
           <View style={styles.headerWrapper}>
             <LinearGradient
-              colors={['#2563EB', '#3B82F6', '#60A5FA']}
+              colors={["#2563EB", "#3B82F6", "#60A5FA"]}
               start={{ x: 0, y: 0 }}
               end={{ x: 1, y: 1 }}
               style={styles.headerGradient}
             >
-              {/* decorative circles */}
               <View style={[styles.circle, styles.circleTopRight]} />
               <View style={[styles.circle, styles.circleBottomLeft]} />
 
               <View style={{ zIndex: 1 }}>
-                {/* top bar */}
                 <View style={styles.headerTopRow}>
-                  {/* LEFT: menu + text */}
-                  <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                  <View style={{ flexDirection: "row", alignItems: "center" }}>
                     <TouchableOpacity
                       style={styles.menuButton}
                       onPress={() => setIsDashboardOpen(true)}
@@ -170,57 +184,75 @@ export default function App() {
                     </TouchableOpacity>
 
                     <View>
-                      <Text style={styles.headerWelcome}>Welcome back</Text>
-                      <Text style={styles.headerName}>Swastik Kumar</Text>
+                      <Text style={styles.headerWelcome}>
+                        {t("Welcome back")}
+                      </Text>
+                      <Text style={styles.headerName}>{t("Swastik Kumar")}</Text>
                     </View>
                   </View>
 
-                  {/* RIGHT: icons */}
+                  {/* RIGHT ICONS */}
                   <View style={styles.headerIconsRow}>
                     <TouchableOpacity style={styles.headerIconButton}>
                       <Icon.Bell size={18} color="#FFFFFF" />
                       <View style={styles.headerDot} />
                     </TouchableOpacity>
+
                     <TouchableOpacity style={styles.headerIconButton}>
                       <Icon.Settings size={18} color="#FFFFFF" />
+                    </TouchableOpacity>
+
+                    {/* LANGUAGE QUICK SWITCH (Hindi) */}
+                    <TouchableOpacity
+                      style={[
+                        styles.headerIconButton,
+                        styles.languageIconButton,
+                      ]}
+                      onPress={() => setLocale("hi")}
+                    >
+                      <Text style={styles.languageIconLabel}>{t("हिन्दी")}</Text>
                     </TouchableOpacity>
                   </View>
                 </View>
 
-                {/* quick stats */}
-                <View style={styles.quickStatsRow}>
-                  {/* Active */}
-                  <View style={[styles.quickCard, { marginRight: 8 }]}>
-                    <View style={styles.quickIconWrapGreen}>
-                      <Icon.CheckCircle size={16} color="#BBF7D0" />
-                    </View>
-                    <Text style={styles.quickLabel}>Active</Text>
-                    <Text style={styles.quickValue}>1 Loan</Text>
-                  </View>
+                {/* FULL LANGUAGE SWITCHER */}
+                <LanguageSwitcher />
 
-                  {/* Pending */}
-                  <View style={[styles.quickCard, { marginHorizontal: 4 }]}>
-                    <View style={styles.quickIconWrapOrange}>
-                      <Icon.Clock size={16} color="#FFEDD5" />
-                    </View>
-                    <Text style={styles.quickLabel}>Pending</Text>
-                    <Text style={styles.quickValue}>2 Tasks</Text>
-                  </View>
-
-                  {/* Status */}
-                  <View style={[styles.quickCard, { marginLeft: 8 }]}>
-                    <View style={styles.quickIconWrapBlue}>
-                      <Icon.TrendingUp size={16} color="#DBEAFE" />
-                    </View>
-                    <Text style={styles.quickLabel}>Status</Text>
-                    <Text style={styles.quickValue}>Good</Text>
-                  </View>
-                </View>
+                <Text style={styles.translationHelper}>
+                  {t("Welcome to our App")}
+                </Text>
               </View>
             </LinearGradient>
           </View>
 
-          {/* LOAN CARD */}
+          {/* ---------------- QUICK STATS ---------------- */}
+          <View style={styles.quickStatsRow}>
+            <View style={[styles.quickCard, { marginRight: 8 }]}>
+              <View style={styles.quickIconWrapGreen}>
+                <Icon.CheckCircle size={16} color="#BBF7D0" />
+              </View>
+              <Text style={styles.quickLabel}>{t("Active")}</Text>
+              <Text style={styles.quickValue}>{t("1")} {t("Loan")}</Text>
+            </View>
+
+            <View style={[styles.quickCard, { marginHorizontal: 4 }]}>
+              <View style={styles.quickIconWrapOrange}>
+                <Icon.Clock size={16} color="#FFEDD5" />
+              </View>
+              <Text style={styles.quickLabel}>{t("Pending")}</Text>
+              <Text style={styles.quickValue}>{t("2")} {t("Tasks")}</Text>
+            </View>
+
+            <View style={[styles.quickCard, { marginLeft: 8 }]}>
+              <View style={styles.quickIconWrapBlue}>
+                <Icon.TrendingUp size={16} color="#DBEAFE" />
+              </View>
+              <Text style={styles.quickLabel}>{t("Status")}</Text>
+              <Text style={styles.quickValue}>{t("Good")}</Text>
+            </View>
+          </View>
+
+          {/* ---------------- LOAN CARD ---------------- */}
           <View
             style={[
               styles.loanCard,
@@ -228,7 +260,7 @@ export default function App() {
             ]}
           >
             <LinearGradient
-              colors={['#2563EB', '#1D4ED8']}
+              colors={["#2563EB", "#1D4ED8"]}
               start={{ x: 0, y: 0 }}
               end={{ x: 1, y: 1 }}
               style={styles.loanHeader}
@@ -238,106 +270,107 @@ export default function App() {
               <View style={{ zIndex: 1 }}>
                 <View style={styles.loanHeaderTopRow}>
                   <View style={styles.badgeWhiteOutline}>
-                    <Text style={styles.badgeWhiteOutlineText}>PMEGP Loan</Text>
+                    <Text style={styles.badgeWhiteOutlineText}>
+                      {t("PMEGP Loan")}
+                    </Text>
                   </View>
                   <View style={styles.badgeGreenSolid}>
                     <Icon.CheckCircle size={12} color="#ECFDF5" />
-                    <Text style={styles.badgeGreenSolidText}> Sanctioned</Text>
+                    <Text style={styles.badgeGreenSolidText}>
+                      {" "}
+                      {t("Sanctioned")}
+                    </Text>
                   </View>
                 </View>
 
-                <Text style={styles.loanLabel}>Sanctioned Amount</Text>
-                <Text style={styles.loanAmount}>₹3,08,568</Text>
-                <Text style={styles.loanId}>Loan ID: LN-0002</Text>
+                <Text style={styles.loanLabel}>{t("Sanctioned Amount")}</Text>
+                <Text style={styles.loanAmount}>{t("₹3,08,568")}</Text>
+                <Text style={styles.loanId}>
+                  {t("Loan ID")}: {t("LN-0002")}
+                </Text>
               </View>
             </LinearGradient>
-
-            {/* quick actions */}
+            {/* QUICK ACTIONS */}
             <View
               style={[
                 styles.actionRow,
                 {
-                  backgroundColor: isDark ? '#1E293B' : '#F9FAFB',
-                  borderColor: isDark ? '#334155' : '#E5E7EB',
+                  backgroundColor: isDark ? "#1E293B" : "#F9FAFB",
+                  borderColor: isDark ? "#334155" : "#E5E7EB",
                 },
               ]}
             >
-              {/* View – icon mini bg always light */}
               <TouchableOpacity style={styles.actionItem}>
                 <View
                   style={[
                     styles.actionIconWrap,
-                    { backgroundColor: '#DBEAFE' },
+                    { backgroundColor: "#DBEAFE" },
                   ]}
                 >
                   <Icon.Eye size={20} color="#2563EB" />
                 </View>
                 <Text style={[styles.actionLabel, { color: textMain }]}>
-                  View
+                  {t("View")}
                 </Text>
               </TouchableOpacity>
 
-              {/* Download – always light bg */}
               <TouchableOpacity style={styles.actionItem}>
                 <View
                   style={[
                     styles.actionIconWrap,
-                    { backgroundColor: '#DBEAFE' },
+                    { backgroundColor: "#DBEAFE" },
                   ]}
                 >
                   <Icon.Download size={20} color="#2563EB" />
                 </View>
                 <Text style={[styles.actionLabel, { color: textMain }]}>
-                  Download
+                  {t("Download")}
                 </Text>
               </TouchableOpacity>
 
-              {/* Share – always light bg */}
               <TouchableOpacity style={styles.actionItem}>
                 <View
                   style={[
                     styles.actionIconWrap,
-                    { backgroundColor: '#DBEAFE' },
+                    { backgroundColor: "#DBEAFE" },
                   ]}
                 >
                   <Icon.Share2 size={20} color="#2563EB" />
                 </View>
                 <Text style={[styles.actionLabel, { color: textMain }]}>
-                  Share
+                  {t("Share")}
                 </Text>
               </TouchableOpacity>
             </View>
 
-            {/* loan details */}
+            {/* LOAN DETAILS */}
             <View style={styles.loanDetails}>
-              {/* bank row – icon box ALWAYS light */}
               <View style={styles.detailRow}>
                 <View style={styles.detailLeft}>
                   <View
                     style={[
                       styles.detailIconWrap,
-                      { backgroundColor: '#EFF6FF' },
+                      { backgroundColor: "#EFF6FF" },
                     ]}
                   >
                     <Icon.Wallet size={20} color="#2563EB" />
                   </View>
                   <View>
                     <Text style={[styles.detailValue, { color: textMain }]}>
-                      Bank Name
+                      {t("Bank Name")}
                     </Text>
                     <Text style={[styles.detailValue, { color: textMain }]}>
-                      Panjab National Bank
+                      {t("Punjab National Bank")}
                     </Text>
                   </View>
                 </View>
                 <Icon.ChevronRight size={18} color="#9CA3AF" />
               </View>
 
-              {/* beneficiary */}
               <View
                 style={[
                   styles.detailRow,
-                  { borderBottomColor: isDark ? '#334155' : '#E5E7EB' },
+                  { borderBottomColor: isDark ? "#334155" : "#E5E7EB" },
                 ]}
               >
                 <View style={styles.detailLeft}>
@@ -346,17 +379,16 @@ export default function App() {
                   </View>
                   <View>
                     <Text style={[styles.detailValue, { color: textMain }]}>
-                      Beneficiary Name
+                      {t("Beneficiary Name")}
                     </Text>
                     <Text style={[styles.detailValue, { color: textMain }]}>
-                      Swastik Kumar Purohit
+                      {t("Swastik Kumar Purohit")}
                     </Text>
                   </View>
                 </View>
                 <Icon.ChevronRight size={18} color="#9CA3AF" />
               </View>
 
-              {/* date */}
               <View style={[styles.detailRow, { borderBottomWidth: 0 }]}>
                 <View style={styles.detailLeft}>
                   <View style={styles.detailIconWrap}>
@@ -364,10 +396,10 @@ export default function App() {
                   </View>
                   <View>
                     <Text style={[styles.detailLabel, { color: textSub }]}>
-                      Sanctioned Date
+                      {t("Sanctioned Date")}
                     </Text>
                     <Text style={[styles.detailValue, { color: textMain }]}>
-                      18 November 2025
+                      {t("18 November 2025")}
                     </Text>
                   </View>
                 </View>
@@ -375,14 +407,14 @@ export default function App() {
               </View>
             </View>
 
-            {/* CTA */}
+            {/* VIEW COMPLETE DETAILS */}
             <TouchableOpacity style={styles.loanCta}>
-              <Text style={styles.loanCtaText}>View Complete Details</Text>
+              <Text style={styles.loanCtaText}>{t("View Complete Details")}</Text>
               <Icon.ChevronRight size={18} color="#FFFFFF" />
             </TouchableOpacity>
           </View>
 
-          {/* GAP BETWEEN CARDS */}
+          {/* GAP */}
           <View style={{ height: 16 }} />
 
           {/* VERIFICATION PROGRESS */}
@@ -395,17 +427,17 @@ export default function App() {
             >
               <View style={styles.sectionHeaderRow}>
                 <Text style={[styles.sectionTitle, { color: textMain }]}>
-                  Verification Progress
+                  {t("Verification Progress")}
                 </Text>
-                <Text style={styles.sectionAccent}>0%</Text>
+                <Text style={styles.sectionAccent}>{t("0%")}</Text>
               </View>
 
               <View style={styles.progressBg}>
-                <View style={[styles.progressBar, { width: '0%' }]} />
+                <View style={[styles.progressBar, { width: "0%" }]} />
               </View>
 
               <Text style={[styles.sectionHint, { color: textSub }]}>
-                Complete all required uploads to verify your loan
+                {t("Complete all required uploads to verify your loan")}
               </Text>
             </View>
           </View>
@@ -414,10 +446,10 @@ export default function App() {
           <View style={styles.section}>
             <View style={styles.sectionHeaderRow}>
               <Text style={[styles.sectionTitle, { color: textMain }]}>
-                Required Uploads
+                {t("Required Uploads")}
               </Text>
               <Text style={[styles.sectionAccentSmall, { color: textMain }]}>
-                0/4 Completed
+                {t("0/4")} {t("Completed")}
               </Text>
             </View>
 
@@ -462,14 +494,14 @@ export default function App() {
               style={[
                 styles.secondaryButton,
                 {
-                  backgroundColor: isDark ? '#1E293B' : '#EFF6FF',
-                  borderColor: isDark ? '#334155' : '#BFDBFE',
+                  backgroundColor: isDark ? "#1E293B" : "#EFF6FF",
+                  borderColor: isDark ? "#334155" : "#BFDBFE",
                   borderWidth: 1,
                 },
               ]}
             >
               <Text style={[styles.secondaryButtonText, { color: textMain }]}>
-                View All Uploads
+                {t("View All Uploads")}
               </Text>
               <Icon.ChevronRight size={18} color="#2563EB" />
             </TouchableOpacity>
@@ -479,13 +511,14 @@ export default function App() {
           <View style={styles.section}>
             <View style={styles.sectionHeaderRow}>
               <Text style={[styles.sectionTitle, { color: textMain }]}>
-                Pending Actions
+                {t("Pending Actions")}
               </Text>
               <TouchableOpacity>
-                <Text style={styles.sectionAccentSmall}>View All</Text>
+                <Text style={styles.sectionAccentSmall}>{t("View All")}</Text>
               </TouchableOpacity>
             </View>
 
+            {/* LIST ITEMS */}
             <View>
               <View
                 style={[
@@ -498,10 +531,10 @@ export default function App() {
                 </View>
                 <View style={{ flex: 1 }}>
                   <Text style={[styles.listTitle, { color: textMain }]}>
-                    Document Upload Required
+                    {t("Document Upload Required")}
                   </Text>
                   <Text style={[styles.listSubtitle, { color: textSub }]}>
-                    Submit identity proof
+                    {t("Submit identity proof")}
                   </Text>
                 </View>
                 <View style={styles.dotOrange} />
@@ -518,10 +551,10 @@ export default function App() {
                 </View>
                 <View style={{ flex: 1 }}>
                   <Text style={[styles.listTitle, { color: textMain }]}>
-                    Verify Bank Account
+                    {t("Verify Bank Account")}
                   </Text>
                   <Text style={[styles.listSubtitle, { color: textSub }]}>
-                    Complete verification process
+                    {t("Complete verification process")}
                   </Text>
                 </View>
                 <View style={styles.dotBlue} />
@@ -533,10 +566,10 @@ export default function App() {
           <View style={[styles.section, { marginBottom: 96 }]}>
             <View style={styles.sectionHeaderRow}>
               <Text style={[styles.sectionTitle, { color: textMain }]}>
-                Recent Activity
+                {t("Recent Activity")}
               </Text>
               <TouchableOpacity>
-                <Text style={styles.sectionAccentSmall}>See All</Text>
+                <Text style={styles.sectionAccentSmall}>{t("See All")}</Text>
               </TouchableOpacity>
             </View>
 
@@ -552,13 +585,13 @@ export default function App() {
                 </View>
                 <View style={{ flex: 1 }}>
                   <Text style={[styles.detailLabel, { color: textMain }]}>
-                    Sanctioned Date
+                    {t("Sanctioned Date")}
                   </Text>
                   <Text style={[styles.activitySubtitle, { color: textSub }]}>
-                    Your PMEGP loan has been approved
+                    {t("Your PMEGP loan has been approved")}
                   </Text>
                   <Text style={[styles.activityTime, { color: textSub }]}>
-                    2 days ago
+                    {t("2 days ago")}
                   </Text>
                 </View>
               </View>
@@ -571,13 +604,13 @@ export default function App() {
                 </View>
                 <View style={{ flex: 1 }}>
                   <Text style={[styles.listTitle, { color: textMain }]}>
-                    Documents Verified
+                    {t("Documents Verified")}
                   </Text>
                   <Text style={[styles.listSubtitle, { color: textSub }]}>
-                    All submitted documents approved
+                    {t("All submitted documents approved")}
                   </Text>
                   <Text style={[styles.activityTime, { color: textSub }]}>
-                    5 days ago
+                    {t("5 days ago")}
                   </Text>
                 </View>
               </View>
@@ -585,213 +618,209 @@ export default function App() {
           </View>
         </ScrollView>
 
-        {/* DASHBOARD OVERLAY – modern (Option 3) */}
+        {/* DASHBOARD OVERLAY */}
         {isDashboardOpen && (
           <View style={styles.dashboardOverlay}>
             <View
               style={[
                 styles.dashboardPanel,
-                { backgroundColor: isDark ? '#020617' : '#FFFFFF' },
+                { backgroundColor: isDark ? "#020617" : "#FFFFFF" },
               ]}
             >
               <Text
                 style={[
                   styles.dashboardTitle,
-                  { color: isDark ? '#E5E7EB' : '#111827' },
+                  { color: isDark ? "#E5E7EB" : "#111827" },
                 ]}
               >
-                Dashboard
+                {t("Dashboard")}
               </Text>
 
-              {/* Home */}
+              {/* HOME */}
               <TouchableOpacity
                 style={[
                   styles.dashboardItem,
-                  activeTab === 'home' && styles.dashboardItemActive,
+                  activeTab === "home" && styles.dashboardItemActive,
                 ]}
                 onPress={() => {
-                  setActiveTab('home');
+                  setActiveTab("home");
                   setIsDashboardOpen(false);
                 }}
               >
                 <Icon.Home
                   size={20}
-                  color={activeTab === 'home' ? '#2563EB' : '#6B7280'}
+                  color={activeTab === "home" ? "#2563EB" : "#6B7280"}
                 />
                 <Text
                   style={[
                     styles.dashboardItemText,
                     {
                       color:
-                        activeTab === 'home'
-                          ? '#2563EB'
+                        activeTab === "home"
+                          ? "#2563EB"
                           : isDark
-                          ? '#E5E7EB'
-                          : '#111827',
+                          ? "#E5E7EB"
+                          : "#111827",
                     },
                   ]}
                 >
-                  Home
+                  {t("Home")}
                 </Text>
               </TouchableOpacity>
 
-              {/* Loans */}
+              {/* LOANS */}
               <TouchableOpacity
                 style={[
                   styles.dashboardItem,
-                  activeTab === 'loans' && styles.dashboardItemActive,
+                  activeTab === "loans" && styles.dashboardItemActive,
                 ]}
                 onPress={() => {
-                  setActiveTab('loans');
+                  setActiveTab("loans");
                   setIsDashboardOpen(false);
                 }}
               >
                 <Icon.Wallet
                   size={20}
-                  color={activeTab === 'loans' ? '#2563EB' : '#6B7280'}
+                  color={activeTab === "loans" ? "#2563EB" : "#6B7280"}
                 />
                 <Text
                   style={[
                     styles.dashboardItemText,
                     {
                       color:
-                        activeTab === 'loans'
-                          ? '#2563EB'
+                        activeTab === "loans"
+                          ? "#2563EB"
                           : isDark
-                          ? '#E5E7EB'
-                          : '#111827',
+                          ? "#E5E7EB"
+                          : "#111827",
                     },
                   ]}
                 >
-                  Loans
+                  {t("Loans")}
                 </Text>
               </TouchableOpacity>
 
-              {/* Documents */}
+              {/* DOCUMENTS */}
               <TouchableOpacity
                 style={[
                   styles.dashboardItem,
-                  activeTab === 'documents' && styles.dashboardItemActive,
+                  activeTab === "documents" && styles.dashboardItemActive,
                 ]}
                 onPress={() => {
-                  setActiveTab('documents');
+                  setActiveTab("documents");
                   setIsDashboardOpen(false);
                 }}
               >
                 <Icon.FileText
                   size={20}
-                  color={activeTab === 'documents' ? '#2563EB' : '#6B7280'}
+                  color={activeTab === "documents" ? "#2563EB" : "#6B7280"}
                 />
                 <Text
                   style={[
                     styles.dashboardItemText,
                     {
                       color:
-                        activeTab === 'documents'
-                          ? '#2563EB'
+                        activeTab === "documents"
+                          ? "#2563EB"
                           : isDark
-                          ? '#E5E7EB'
-                          : '#111827',
+                          ? "#E5E7EB"
+                          : "#111827",
                     },
                   ]}
                 >
-                  Documents
+                  {t("Documents")}
                 </Text>
               </TouchableOpacity>
 
-              {/* Profile */}
+              {/* PROFILE */}
               <TouchableOpacity
                 style={[
                   styles.dashboardItem,
-                  activeTab === 'profile' && styles.dashboardItemActive,
+                  activeTab === "profile" && styles.dashboardItemActive,
                 ]}
                 onPress={() => {
-                  setActiveTab('profile');
+                  setActiveTab("profile");
                   setIsDashboardOpen(false);
                 }}
               >
                 <Icon.User
                   size={20}
-                  color={activeTab === 'profile' ? '#2563EB' : '#6B7280'}
+                  color={activeTab === "profile" ? "#2563EB" : "#6B7280"}
                 />
                 <Text
                   style={[
                     styles.dashboardItemText,
                     {
                       color:
-                        activeTab === 'profile'
-                          ? '#2563EB'
+                        activeTab === "profile"
+                          ? "#2563EB"
                           : isDark
-                          ? '#E5E7EB'
-                          : '#111827',
+                          ? "#E5E7EB"
+                          : "#111827",
                     },
                   ]}
                 >
-                  Profile
+                  {t("Profile")}
                 </Text>
               </TouchableOpacity>
 
-              {/* Settings (just a placeholder for now) */}
+              {/* SETTINGS */}
               <TouchableOpacity style={styles.dashboardItem}>
                 <Icon.Settings
                   size={20}
-                  color={isDark ? '#93C5FD' : '#2563EB'}
+                  color={isDark ? "#93C5FD" : "#2563EB"}
                 />
                 <Text
                   style={[
                     styles.dashboardItemText,
-                    { color: isDark ? '#E5E7EB' : '#111827' },
+                    { color: isDark ? "#E5E7EB" : "#111827" },
                   ]}
                 >
-                  Settings
+                  {t("Settings")}
                 </Text>
               </TouchableOpacity>
 
               <View style={styles.dashboardDivider} />
 
-              {/* Theme toggle (inside panel) */}
+              {/* THEME TOGGLE */}
               <TouchableOpacity
                 style={styles.dashboardItem}
                 onPress={toggleTheme}
               >
                 <Feather
-                  name={isDark ? 'sun' : 'moon'}
+                  name={isDark ? "sun" : "moon"}
                   size={20}
-                  color={isDark ? '#FACC15' : '#2563EB'}
+                  color={isDark ? "#FACC15" : "#2563EB"}
                 />
                 <Text
                   style={[
                     styles.dashboardItemText,
-                    { color: isDark ? '#FACC15' : '#111827' },
+                    { color: isDark ? "#FACC15" : "#111827" },
                   ]}
                 >
-                  {isDark ? 'Switch to Light Theme' : 'Switch to Dark Theme'}
+                  {isDark
+                    ? t("Switch to Light Theme")
+                    : t("Switch to Dark Theme")}
                 </Text>
               </TouchableOpacity>
 
               <View style={styles.dashboardDivider} />
 
-              {/* Logout */}
+              {/* LOGOUT */}
               <TouchableOpacity
                 style={styles.dashboardItem}
-                onPress={() => {
-                  setIsDashboardOpen(false);
-                  // you can add real logout logic later
-                }}
+                onPress={() => setIsDashboardOpen(false)}
               >
                 <MaterialIcons name="logout" size={20} color="#DC2626" />
                 <Text
-                  style={[
-                    styles.dashboardItemText,
-                    { color: '#DC2626' },
-                  ]}
+                  style={[styles.dashboardItemText, { color: "#DC2626" }]}
                 >
-                  Logout
+                  {t("Logout")}
                 </Text>
               </TouchableOpacity>
             </View>
 
-            {/* backdrop */}
+            {/* BACKDROP */}
             <TouchableOpacity
               style={styles.dashboardBackdrop}
               activeOpacity={1}
@@ -800,85 +829,85 @@ export default function App() {
           </View>
         )}
 
-        {/* BOTTOM NAVIGATION */}
+        {/* BOTTOM NAV */}
         <View
           style={[
             styles.bottomNav,
             {
-              backgroundColor: isDark ? '#020617' : '#FFFFFF',
-              borderTopColor: isDark ? '#1F2937' : '#E5E7EB',
+              backgroundColor: isDark ? "#020617" : "#FFFFFF",
+              borderTopColor: isDark ? "#1F2937" : "#E5E7EB",
             },
           ]}
         >
           <TouchableOpacity
-            onPress={() => setActiveTab('home')}
+            onPress={() => setActiveTab("home")}
             style={styles.navItem}
           >
             <Icon.Home
               size={20}
-              color={activeTab === 'home' ? '#2563EB' : '#9CA3AF'}
+              color={activeTab === "home" ? "#2563EB" : "#9CA3AF"}
             />
             <Text
               style={[
                 styles.navLabel,
-                activeTab === 'home' && styles.navLabelActive,
+                activeTab === "home" && styles.navLabelActive,
               ]}
             >
-              Home
+              {t("Home")}
             </Text>
           </TouchableOpacity>
 
           <TouchableOpacity
-            onPress={() => setActiveTab('loans')}
+            onPress={() => setActiveTab("loans")}
             style={styles.navItem}
           >
             <Icon.Wallet
               size={20}
-              color={activeTab === 'loans' ? '#2563EB' : '#9CA3AF'}
+              color={activeTab === "loans" ? "#2563EB" : "#9CA3AF"}
             />
             <Text
               style={[
                 styles.navLabel,
-                activeTab === 'loans' && styles.navLabelActive,
+                activeTab === "loans" && styles.navLabelActive,
               ]}
             >
-              Loans
+              {t("Loans")}
             </Text>
           </TouchableOpacity>
 
           <TouchableOpacity
-            onPress={() => setActiveTab('documents')}
+            onPress={() => setActiveTab("documents")}
             style={styles.navItem}
           >
             <Icon.FileText
               size={20}
-              color={activeTab === 'documents' ? '#2563EB' : '#9CA3AF'}
+              color={activeTab === "documents" ? "#2563EB" : "#9CA3AF"}
             />
             <Text
               style={[
                 styles.navLabel,
-                activeTab === 'documents' && styles.navLabelActive,
+                activeTab === "documents" && styles.navLabelActive,
               ]}
             >
-              Docs
+              {t("Docs")}
             </Text>
           </TouchableOpacity>
 
           <TouchableOpacity
-            onPress={() => setActiveTab('profile')}
+            onPress={() => setActiveTab("profile")}
             style={styles.navItem}
           >
             <Icon.User
               size={20}
-              color={activeTab === 'profile' ? '#2563EB' : '#9CA3AF'}
+              color={activeTab === "profile" ? "#2563EB" : "#9CA3AF"}
             />
             <Text
               style={[
                 styles.navLabel,
-                activeTab === 'profile' && styles.navLabelActive,
+                activeTab === "profile" && styles.navLabelActive,
               ]}
             >
-              Profile
+              {t("Profile")}
             </Text>
           </TouchableOpacity>
         </View>
@@ -887,470 +916,11 @@ export default function App() {
   );
 }
 
-const styles = StyleSheet.create({
-  safeArea: { flex: 1 },
-  root: { flex: 1 },
-
-  headerWrapper: { paddingHorizontal: 16, paddingTop: 8, paddingBottom: 32 },
-  headerGradient: {
-    borderRadius: 28,
-    paddingHorizontal: 20,
-    paddingTop: 16,
-    paddingBottom: 28,
-    overflow: 'hidden',
-  },
-
-  circle: {
-    position: 'absolute',
-    width: 180,
-    height: 180,
-    borderRadius: 90,
-    backgroundColor: 'rgba(255,255,255,0.12)',
-  },
-  circleTopRight: { top: -70, right: -60 },
-  circleBottomLeft: { bottom: -50, left: -80 },
-
-  headerTopRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 18,
-  },
-  menuButton: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: 'rgba(15, 23, 42, 0.35)',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: 10,
-  },
-  headerWelcome: { color: '#DBEAFE', fontSize: 12, marginBottom: 4 },
-  headerName: { color: '#FFFFFF', fontSize: 20, fontWeight: '600' },
-
-  headerIconsRow: { flexDirection: 'row', alignItems: 'center' },
-  headerIconButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: 'rgba(255,255,255,0.22)',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginLeft: 10,
-  },
-  headerDot: {
-    position: 'absolute',
-    top: 8,
-    right: 8,
-    width: 6,
-    height: 6,
-    borderRadius: 3,
-    backgroundColor: '#EF4444',
-  },
-
-  quickStatsRow: { flexDirection: 'row' },
-  quickCard: {
-    flex: 1,
-    borderRadius: 18,
-    padding: 12,
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.28)',
-    backgroundColor: 'rgba(255,255,255,0.18)',
-  },
-  quickIconWrapGreen: {
-    width: 32,
-    height: 32,
-    borderRadius: 10,
-    backgroundColor: 'rgba(34,197,94,0.32)',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 8,
-  },
-  quickIconWrapOrange: {
-    width: 32,
-    height: 32,
-    borderRadius: 10,
-    backgroundColor: 'rgba(249,115,22,0.32)',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 8,
-  },
-  quickIconWrapBlue: {
-    width: 32,
-    height: 32,
-    borderRadius: 10,
-    backgroundColor: 'rgba(59,130,246,0.32)',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 8,
-  },
-  quickLabel: { color: 'rgba(239,246,255,0.9)', fontSize: 11, marginBottom: 2 },
-  quickValue: { color: '#FFFFFF', fontSize: 14, fontWeight: '500' },
-
-  scrollContent: { paddingHorizontal: 16, paddingBottom: 24 },
-
-  loanCard: {
-    borderRadius: 26,
-    marginTop: -32,
-    marginBottom: 16,
-    shadowColor: '#000',
-    shadowOpacity: 0.08,
-    shadowRadius: 14,
-    shadowOffset: { width: 0, height: 6 },
-    elevation: 4,
-    overflow: 'hidden',
-    borderWidth: 1,
-  },
-  loanHeader: {
-    padding: 16,
-    borderTopLeftRadius: 26,
-    borderTopRightRadius: 26,
-    overflow: 'hidden',
-  },
-  circleSmall: {
-    position: 'absolute',
-    width: 120,
-    height: 120,
-    borderRadius: 60,
-    backgroundColor: 'rgba(255,255,255,0.12)',
-  },
-  circleLoanTopRight: { top: -40, right: -40 },
-  loanHeaderTopRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 12,
-  },
-  badgeWhiteOutline: {
-    paddingHorizontal: 10,
-    paddingVertical: 5,
-    borderRadius: 999,
-    backgroundColor: 'rgba(255,255,255,0.24)',
-  },
-  badgeWhiteOutlineText: { color: '#FFFFFF', fontSize: 11 },
-  badgeGreenSolid: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#22C55E',
-    paddingHorizontal: 10,
-    paddingVertical: 5,
-    borderRadius: 999,
-  },
-  badgeGreenSolidText: { color: '#FFFFFF', fontSize: 11 },
-  loanLabel: { color: '#BFDBFE', fontSize: 12, marginBottom: 4 },
-  loanAmount: { color: '#FFFFFF', fontSize: 24, fontWeight: '700' },
-  loanId: { color: '#E0F2FE', fontSize: 12, marginTop: 2 },
-
-  actionRow: {
-    flexDirection: 'row',
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    borderTopWidth: 1,
-    borderBottomWidth: 1,
-  },
-  actionItem: {
-    flex: 1,
-    alignItems: 'center',
-    paddingVertical: 6,
-  },
-  actionIconWrap: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 4,
-  },
-  actionLabel: { fontSize: 12, color: '#374151' },
-
-  loanDetails: { paddingHorizontal: 16, paddingVertical: 8 },
-  detailRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingVertical: 10,
-    borderBottomWidth: 1,
-    borderBottomColor: '#E5E7EB',
-  },
-  detailLeft: { flexDirection: 'row', alignItems: 'center' },
-  detailIconWrap: {
-    width: 40,
-    height: 40,
-    borderRadius: 14,
-    backgroundColor: '#EFF6FF',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: 10,
-  },
-  detailLabel: { fontSize: 12, color: '#6B7280' },
-  detailValue: { fontSize: 14, color: '#111827' },
-
-  loanCta: {
-    marginHorizontal: 16,
-    marginVertical: 12,
-    borderRadius: 18,
-    paddingVertical: 12,
-    backgroundColor: '#2563EB',
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  loanCtaText: { color: '#FFFFFF', fontWeight: '500', fontSize: 14 },
-
-  section: { marginBottom: 16 },
-  cardWhite: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 22,
-    padding: 16,
-    borderWidth: 1,
-    borderColor: '#E5E7EB',
-  },
-  sectionHeaderRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 10,
-  },
-  sectionTitle: { fontSize: 16, fontWeight: '600', color: '#111827' },
-  sectionAccent: { color: '#2563EB', fontWeight: '600', fontSize: 14 },
-  sectionAccentSmall: { color: '#2563EB', fontSize: 13 },
-
-  progressBg: {
-    width: '100%',
-    height: 10,
-    borderRadius: 999,
-    backgroundColor: '#E5E7EB',
-    overflow: 'hidden',
-  },
-  progressBar: {
-    height: '100%',
-    borderRadius: 999,
-    backgroundColor: '#2563EB',
-  },
-  sectionHint: {
-    marginTop: 8,
-    fontSize: 12,
-    color: '#6B7280',
-  },
-
-  uploadCard: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 24,
-    borderWidth: 1,
-    borderColor: '#E5E7EB',
-    overflow: 'hidden',
-  },
-  uploadRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 14,
-    paddingVertical: 12,
-  },
-  uploadRowBorder: { borderBottomWidth: 1, borderBottomColor: '#F3F4F6' },
-  uploadIconWrap: {
-    width: 46,
-    height: 46,
-    borderRadius: 14,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: 12,
-  },
-  uploadTitle: {
-    fontSize: 14,
-    fontWeight: '500',
-    color: '#111827',
-    marginBottom: 4,
-  },
-  badgeOrange: {
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 999,
-    backgroundColor: '#FFF7ED',
-  },
-  badgeOrangeText: { fontSize: 11, color: '#C2410C' },
-  badgeBlue: {
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 999,
-    backgroundColor: '#EFF6FF',
-  },
-  badgeBlueText: { fontSize: 11, color: '#1D4ED8' },
-  badgeGreen: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 999,
-    backgroundColor: '#ECFDF5',
-  },
-  badgeGreenText: { fontSize: 11, color: '#047857' },
-  uploadButton: {
-    borderWidth: 1,
-    borderColor: '#DBEAFE',
-    borderRadius: 14,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  uploadButtonText: { color: '#2563EB', fontSize: 12, fontWeight: '500' },
-
-  secondaryButton: {
-    marginTop: 12,
-    borderRadius: 18,
-    paddingVertical: 10,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  secondaryButtonText: { color: '#2563EB', fontWeight: '500' },
-
-  listCardRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    borderRadius: 18,
-    padding: 12,
-    borderWidth: 1,
-    borderColor: '#E5E7EB',
-    marginBottom: 12,
-  },
-  listIconOrange: {
-    width: 46,
-    height: 46,
-    borderRadius: 16,
-    backgroundColor: '#FFEDD5',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: 12,
-  },
-  listIconBlue: {
-    width: 46,
-    height: 46,
-    borderRadius: 16,
-    backgroundColor: '#DBEAFE',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: 12,
-  },
-  listTitle: { fontSize: 14, color: '#111827', marginBottom: 2 },
-  listSubtitle: { fontSize: 12, color: '#6B7280' },
-  dotOrange: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: '#EA580C',
-  },
-  dotBlue: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: '#2563EB',
-  },
-
-  activityCard: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 20,
-    borderWidth: 1,
-    borderColor: '#E5E7EB',
-  },
-  activityRow: {
-    flexDirection: 'row',
-    padding: 14,
-    alignItems: 'flex-start',
-  },
-  activityIconGreen: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: '#DCFCE7',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: 10,
-    marginTop: 2,
-  },
-  activityIconBlue: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: '#DBEAFE',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: 10,
-    marginTop: 2,
-  },
-  activitySubtitle: {
-    fontSize: 12,
-    color: '#6B7280',
-    marginTop: 2,
-  },
-  activityTime: { fontSize: 11, color: '#9CA3AF', marginTop: 4 },
-  activityDivider: { height: 1, backgroundColor: '#E5E7EB' },
-
-  // dashboard overlay
-  dashboardOverlay: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    flexDirection: 'row',
-    zIndex: 50,
-  },
-  dashboardBackdrop: {
-    flex: 1,
-    backgroundColor: 'rgba(15, 23, 42, 0.4)',
-  },
-  dashboardPanel: {
-    width: '70%',
-    paddingTop: 50,
-    paddingHorizontal: 16,
-    paddingBottom: 24,
-    shadowColor: '#000',
-    shadowOpacity: 0.2,
-    shadowRadius: 10,
-    elevation: 8,
-  },
-  dashboardTitle: {
-    fontSize: 18,
-    fontWeight: '700',
-    marginBottom: 16,
-    color: '#111827',
-  },
-  dashboardItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: 10,
-    paddingHorizontal: 4,
-    borderRadius: 10,
-  },
-  dashboardItemActive: {
-    backgroundColor: '#EFF6FF',
-  },
-  dashboardItemText: {
-    fontSize: 14,
-    marginLeft: 10,
-    color: '#111827',
-    fontWeight: '500',
-  },
-  dashboardDivider: {
-    height: 1,
-    backgroundColor: '#E5E7EB',
-    marginVertical: 12,
-  },
-
-  bottomNav: {
-    position: 'absolute',
-    left: 0,
-    right: 0,
-    bottom: 0,
-    height: 72,
-    flexDirection: 'row',
-    borderTopWidth: 1,
-    alignItems: 'center',
-    justifyContent: 'space-around',
-    paddingHorizontal: 16,
-  },
-  navItem: { alignItems: 'center', justifyContent: 'center' },
-  navLabel: { fontSize: 12, color: '#9CA3AF', marginTop: 4 },
-  navLabelActive: { color: '#2563EB', fontWeight: '500' },
-});
+// ---------------- ROOT WRAPPER ----------------
+export default function App() {
+  return (
+    <LocalizeProvider>
+      <MainApp />
+    </LocalizeProvider>
+  );
+}

@@ -10,6 +10,7 @@ import { DefaultTheme, NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { useMemo } from 'react';
 import { Alert, StyleSheet, TouchableOpacity, View } from 'react-native';
+import { useT } from 'lingo.dev/react';
 
 import { AppIcon } from '@/components/atoms/app-icon';
 import { AppText } from '@/components/atoms/app-text';
@@ -151,6 +152,7 @@ const BeneficiaryDrawerNavigator = () => {
   const theme = useAppTheme();
   const profile = useAuthStore((state) => state.profile);
   const logout = useAuthStore((state) => state.actions.logout);
+  const t = useT();
 
   return (
     <BeneficiaryDrawer.Navigator
@@ -180,32 +182,32 @@ const BeneficiaryDrawerNavigator = () => {
       <BeneficiaryDrawer.Screen
         name="BeneficiaryDashboard"
         component={BeneficiaryTabNavigator}
-        options={{ title: 'Dashboard', drawerIcon: ({color}) => <AppIcon name="view-dashboard" size={24} color={color} /> }}
+        options={{ title: t('Dashboard'), drawerIcon: ({color}) => <AppIcon name="view-dashboard" size={24} color={color} /> }}
       />
       <BeneficiaryDrawer.Screen
         name="BeneficiaryProfile"
         component={BeneficiaryProfileScreen}
-        options={{ title: 'Profile', drawerIcon: ({color}) => <AppIcon name="account" size={24} color={color} /> }}
+        options={{ title: t('Profile'), drawerIcon: ({color}) => <AppIcon name="account" size={24} color={color} /> }}
       />
       <BeneficiaryDrawer.Screen
         name="PreviousSubmissions"
         component={PreviousSubmissionsScreen}
-        options={{ title: 'My Submissions', drawerIcon: ({color}) => <AppIcon name="history" size={24} color={color} /> }}
+        options={{ title: t('My Submissions'), drawerIcon: ({color}) => <AppIcon name="history" size={24} color={color} /> }}
       />
       <BeneficiaryDrawer.Screen
         name="SyncStatus"
         component={SyncStatusScreen}
-        options={{ title: 'Download', drawerIcon: ({color}) => <AppIcon name="download" size={24} color={color} /> }}
+        options={{ title: t('Download'), drawerIcon: ({color}) => <AppIcon name="download" size={24} color={color} /> }}
       />
       <BeneficiaryDrawer.Screen
         name="LoanAssistant"
         component={BeneficiaryLoanAssistantScreen}
-        options={{ title: 'Support', drawerIcon: ({color}) => <AppIcon name="lifebuoy" size={24} color={color} /> }}
+        options={{ title: t('Support'), drawerIcon: ({color}) => <AppIcon name="lifebuoy" size={24} color={color} /> }}
       />
       <BeneficiaryDrawer.Screen
         name="LoanDetails"
         component={LoanDetailsScreen}
-        options={{ title: 'Settings', drawerIcon: ({color}) => <AppIcon name="cog" size={24} color={color} /> }}
+        options={{ title: t('Settings'), drawerIcon: ({color}) => <AppIcon name="cog" size={24} color={color} /> }}
       />
     </BeneficiaryDrawer.Navigator>
   );
@@ -339,12 +341,13 @@ type BeneficiaryDrawerContentProps = DrawerContentComponentProps & {
 
 const BeneficiaryDrawerContent = ({ beneficiaryName, beneficiaryVillage, onLogout, ...props }: BeneficiaryDrawerContentProps) => {
   const theme = useAppTheme();
+  const t = useT();
 
   const handleLogout = () => {
-    Alert.alert('Logout', 'Are you sure you want to sign out?', [
-      { text: 'Cancel', style: 'cancel' },
+    Alert.alert(t('Logout'), t('Are you sure you want to sign out?'), [
+      { text: t('Cancel'), style: 'cancel' },
       {
-        text: 'Logout',
+        text: t('Logout'),
         style: 'destructive',
         onPress: () => {
           props.navigation.closeDrawer();

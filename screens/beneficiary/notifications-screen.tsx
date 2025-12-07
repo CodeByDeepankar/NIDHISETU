@@ -2,6 +2,7 @@ import React from 'react';
 import { View, StyleSheet, FlatList, TouchableOpacity } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
+import { useT } from 'lingo.dev/react';
 import { AppText } from '@/components/atoms/app-text';
 
 const MOCK_NOTIFICATIONS = [
@@ -32,6 +33,8 @@ const MOCK_NOTIFICATIONS = [
 ];
 
 export const NotificationsScreen = ({ navigation }: any) => {
+  const t = useT();
+
   const renderItem = ({ item }: any) => (
     <TouchableOpacity style={[styles.notificationItem, !item.read && styles.unreadItem]}>
       <View style={[styles.iconContainer, { backgroundColor: getIconColor(item.type) }]}>
@@ -39,10 +42,10 @@ export const NotificationsScreen = ({ navigation }: any) => {
       </View>
       <View style={styles.contentContainer}>
         <View style={styles.headerRow}>
-          <AppText style={styles.title}>{item.title}</AppText>
-          <AppText style={styles.date}>{item.date}</AppText>
+          <AppText style={styles.title}>{t(item.title)}</AppText>
+          <AppText style={styles.date}>{t(item.date)}</AppText>
         </View>
-        <AppText style={styles.message} numberOfLines={2}>{item.message}</AppText>
+        <AppText style={styles.message} numberOfLines={2}>{t(item.message)}</AppText>
       </View>
       {!item.read && <View style={styles.dot} />}
     </TouchableOpacity>
@@ -72,7 +75,7 @@ export const NotificationsScreen = ({ navigation }: any) => {
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
           <Ionicons name="arrow-back" size={24} color="#333" />
         </TouchableOpacity>
-        <AppText style={styles.headerTitle}>Notifications</AppText>
+        <AppText style={styles.headerTitle}>{t('Notifications')}</AppText>
         <View style={{ width: 40 }} />
       </View>
 
@@ -85,7 +88,7 @@ export const NotificationsScreen = ({ navigation }: any) => {
         ListEmptyComponent={
           <View style={styles.emptyContainer}>
             <Ionicons name="notifications-off-outline" size={64} color="#ccc" />
-            <AppText style={styles.emptyText}>No notifications yet</AppText>
+            <AppText style={styles.emptyText}>{t('No notifications yet')}</AppText>
           </View>
         }
       />
