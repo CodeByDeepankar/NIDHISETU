@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import { View, StyleSheet, ScrollView, TouchableOpacity, Dimensions, TextInput } from 'react-native';
+import { View, StyleSheet, ScrollView, TouchableOpacity, Dimensions, TextInput, type ColorValue } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
@@ -16,7 +16,7 @@ export const EmiCalculatorScreen = ({ navigation }: any) => {
   const t = useT();
   const theme = useAppTheme();
   const styles = useMemo(() => createStyles(theme), [theme]);
-  const gradientColors = useMemo(
+  const gradientColors = useMemo<readonly [ColorValue, ColorValue]>(
     () => (theme.mode === 'dark' ? [theme.colors.gradientStart, theme.colors.gradientEnd] : ['#008080', '#20B2AA']),
     [theme]
   );

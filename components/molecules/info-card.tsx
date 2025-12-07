@@ -1,4 +1,4 @@
-import { Image, StyleSheet, TouchableOpacity, View, ViewStyle } from 'react-native';
+import { Image, StyleSheet, TouchableOpacity, View, ViewStyle, type ImageStyle, type ImageResizeMode } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 
 import { AppText } from '@/components/atoms/app-text';
@@ -11,9 +11,24 @@ interface InfoCardProps {
   variant?: 'standard' | 'overlay';
   onPress?: () => void;
   style?: ViewStyle;
+  imageStyle?: ImageStyle;
+  imageResizeMode?: ImageResizeMode;
+  imageContainerStyle?: ViewStyle;
+  imageAspectRatio?: number;
 }
 
-export const InfoCard = ({ title, description, image, variant = 'standard', onPress, style }: InfoCardProps) => {
+export const InfoCard = ({
+  title,
+  description,
+  image,
+  variant = 'standard',
+  onPress,
+  style,
+  imageStyle,
+  imageResizeMode = 'cover',
+  imageContainerStyle,
+  imageAspectRatio,
+}: InfoCardProps) => {
   const theme = useAppTheme();
 
   if (variant === 'overlay') {
@@ -23,7 +38,7 @@ export const InfoCard = ({ title, description, image, variant = 'standard', onPr
         onPress={onPress}
         activeOpacity={0.9}
       >
-        <Image source={{ uri: image }} style={styles.overlayImage} resizeMode="cover" />
+        <Image source={{ uri: image }} style={[styles.overlayImage, imageStyle]} resizeMode={imageResizeMode} />
         <LinearGradient
           colors={['transparent', 'rgba(0,0,0,0.8)']}
           style={styles.gradient}
@@ -43,7 +58,19 @@ export const InfoCard = ({ title, description, image, variant = 'standard', onPr
       onPress={onPress}
       activeOpacity={0.9}
     >
-      <Image source={{ uri: image }} style={styles.standardImage} resizeMode="cover" />
+      <View
+        style={[
+          styles.standardImageContainer,
+          { backgroundColor: theme.colors.surfaceVariant, aspectRatio: imageAspectRatio ?? 16 / 9 },
+          imageContainerStyle,
+        ]}
+      >
+        <Image
+          source={{ uri: image }}
+          style={[styles.standardImage, imageStyle]}
+          resizeMode={imageResizeMode}
+        />
+      </View>
       <View style={styles.content}>
         <AppText style={styles.title} numberOfLines={1}>{title}</AppText>
         {description && (
@@ -72,9 +99,15 @@ const styles = StyleSheet.create({
     width: '100%',
     height: 180,
   },
+  standardImageContainer: {
+    width: '100%',
+    borderTopLeftRadius: 16,
+    borderTopRightRadius: 16,
+    overflow: 'hidden',
+  },
   standardImage: {
     width: '100%',
-    height: 140,
+    height: '100%',
   },
   overlayImage: {
     width: '100%',

@@ -11,6 +11,9 @@ import {
     TouchableOpacity,
     TouchableWithoutFeedback,
     View,
+    type ImageStyle,
+    type ImageResizeMode,
+    type ViewStyle,
 } from 'react-native';
 import { useAppLocale, useT } from 'lingo.dev/react';
 
@@ -40,13 +43,13 @@ type CalculatorRoute = 'EmiCalculator' | 'SubsidyCalculator' | 'EligibilityPredi
 
 type MenuItemKey = 'trackLoan' | 'uploadEvidence' | 'geoCamera' | 'notifications' | 'contactOfficer' | 'myProfile';
 
-const menuItems: Array<{ key: MenuItemKey; title: string; icon: IconName; color: string }> = [
-    { key: 'trackLoan', title: 'Track Loan', icon: 'clipboard-text-clock-outline', color: '#A855F7' },
-    { key: 'uploadEvidence', title: 'Upload Evidence', icon: 'cloud-upload-outline', color: '#A855F7' },
-    { key: 'geoCamera', title: 'Geo-Camera', icon: 'camera-marker-outline', color: '#A855F7' },
-    { key: 'notifications', title: 'Notifications', icon: 'bell-outline', color: '#A855F7' },
-    { key: 'contactOfficer', title: 'Contact Officer', icon: 'card-account-phone-outline', color: '#A855F7' },
-    { key: 'myProfile', title: 'My Profile', icon: 'account-circle-outline', color: '#A855F7' },
+const menuItems: Array<{ key: MenuItemKey; title: string; icon: IconName; color: string; background: string }> = [
+    { key: 'trackLoan', title: 'Track Loan', icon: 'clipboard-text-clock-outline', color: '#1D4ED8', background: '#E8F2FF' },
+    { key: 'uploadEvidence', title: 'Upload Evidence', icon: 'cloud-upload-outline', color: '#7C3AED', background: '#F3E8FF' },
+    { key: 'geoCamera', title: 'Geo-Camera', icon: 'camera-marker-outline', color: '#0F766E', background: '#E6FFFA' },
+    { key: 'notifications', title: 'Notifications', icon: 'bell-outline', color: '#D97706', background: '#FFF8E1' },
+    { key: 'contactOfficer', title: 'Contact Officer', icon: 'card-account-phone-outline', color: '#059669', background: '#E8F9EE' },
+    { key: 'myProfile', title: 'My Profile', icon: 'account-circle-outline', color: '#BE185D', background: '#FFE8F2' },
 ];
 
 const trainingItems = [
@@ -55,42 +58,73 @@ const trainingItems = [
     { title: 'Government skill centres', image: 'https://images.unsplash.com/photo-1531482615713-2afd69097998?auto=format&fit=crop&w=800&q=80' },
 ];
 
-const calculatorItems: Array<{ title: string; desc: string; image: string; route: CalculatorRoute }> = [
+const calculatorItems: Array<{
+    title: string;
+    desc: string;
+    image: string;
+    route: CalculatorRoute;
+    imageStyle?: ImageStyle;
+    imageResizeMode?: ImageResizeMode;
+    imageContainerStyle?: ViewStyle;
+    imageAspectRatio?: number;
+}> = [
     {
         title: 'EMI calculator',
         desc: 'Plan your repayment.',
-        image: 'https://images.unsplash.com/photo-1554224154-26032ffc0d07?auto=format&fit=crop&w=800&q=80',
+        image: 'https://drive.google.com/uc?export=view&id=1z7GKuLN83akB8G071RbH6ZRRkvgLa5_C',
+        imageResizeMode: 'cover',
+        imageContainerStyle: { backgroundColor: '#F4F7FB' },
         route: 'EmiCalculator',
     },
     {
         title: 'Subsidy calculator',
         desc: 'Check your benefits.',
-        image: 'https://images.unsplash.com/photo-1509391366360-2e959784a276?auto=format&fit=crop&w=800&q=80',
+        image: 'https://drive.google.com/uc?export=view&id=1EzIR1xto-f6j7o0CQBgLdUR9eyj7b8bI',
+        imageResizeMode: 'cover',
+        imageContainerStyle: { backgroundColor: '#F1F5FF' },
         route: 'SubsidyCalculator',
     },
     {
         title: 'Eligibility prediction',
         desc: 'Know your chances.',
-        image: 'https://images.unsplash.com/photo-1450101499163-c8848c66ca85?auto=format&fit=crop&w=800&q=80',
+        image: 'https://drive.google.com/uc?export=view&id=1vEXL_Ieyu11zaeCoEz5lQXLFsCc6F3ql',
+        imageResizeMode: 'cover',
+        imageContainerStyle: { backgroundColor: '#F3F8F6' },
         route: 'EligibilityPrediction',
     },
 ];
 
-const grievanceItems = [
+const grievanceItems: Array<{
+    title: string;
+    desc: string;
+    image: string;
+    imageResizeMode?: ImageResizeMode;
+    imageContainerStyle?: ViewStyle;
+    imageAspectRatio?: number;
+}> = [
     {
         title: 'Submit issue',
         desc: 'Face any problem? Let us know.',
-        image: 'https://images.unsplash.com/photo-1534536281715-e28d76689b4d?auto=format&fit=crop&w=800&q=80',
+        image: 'https://drive.google.com/uc?export=view&id=18seuSe2mnB-2gZM783okhqv3dnHxpnlv',
+        imageResizeMode: 'cover',
+        imageContainerStyle: { backgroundColor: '#FFF4EE' },
+        imageAspectRatio: 16 / 9,
     },
     {
         title: 'Track complaint',
         desc: 'Check status of your tickets.',
-        image: 'https://images.unsplash.com/photo-1551836022-d5d88e9218df?auto=format&fit=crop&w=800&q=80',
+        image: 'https://drive.google.com/uc?export=view&id=1Iff_njWbCSt-tQWYbq0te7vUnOHKgUyg',
+        imageResizeMode: 'cover',
+        imageContainerStyle: { backgroundColor: '#EEF6FF' },
+         imageAspectRatio: 16 / 9,
     },
     {
         title: 'Officer response',
         desc: 'View replies from officials.',
-        image: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&w=800&q=80',
+        image: 'https://drive.google.com/uc?export=view&id=1Xe9fzI_opXmyPo2jyI9vqFOrptYu33dW',
+        imageResizeMode: 'cover',
+        imageContainerStyle: { backgroundColor: '#EFF7F9' },
+        imageAspectRatio: 16 / 9,
     },
 ];
 
@@ -258,9 +292,13 @@ export const BeneficiaryDashboardScreen = () => {
             <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
                 <View style={styles.grid}>
                     {menuItems.map((item) => (
-                        <TouchableOpacity key={item.key} style={styles.card} onPress={() => handleMenuPress(item.key)}>
+                        <TouchableOpacity
+                            key={item.key}
+                            style={[styles.card, { backgroundColor: item.background }]}
+                            onPress={() => handleMenuPress(item.key)}
+                        >
                             <View style={styles.iconContainer}>
-                                <AppIcon name={item.icon} size={32} color={item.color} />
+                                <AppIcon name={item.icon} size={36} color={item.color} />
                             </View>
                             <AppText style={styles.cardTitle}>{t(item.title)}</AppText>
                             <AppText style={styles.viewStatus}>{t('View Status')}</AppText>
@@ -331,6 +369,10 @@ export const BeneficiaryDashboardScreen = () => {
                                 variant="standard"
                                 style={{ marginBottom: 16 }}
                                 onPress={() => navigation.navigate(item.route)}
+                                imageStyle={item.imageStyle}
+                                imageResizeMode={item.imageResizeMode}
+                                imageContainerStyle={item.imageContainerStyle}
+                                imageAspectRatio={item.imageAspectRatio}
                             />
                         ))}
                     </View>
@@ -347,6 +389,9 @@ export const BeneficiaryDashboardScreen = () => {
                                 image={item.image}
                                 variant="standard"
                                 style={{ marginBottom: 16 }}
+                                imageResizeMode={item.imageResizeMode}
+                                imageContainerStyle={item.imageContainerStyle}
+                                imageAspectRatio={item.imageAspectRatio}
                             />
                         ))}
                     </View>
@@ -490,20 +535,33 @@ const createStyles = (theme: AppTheme) =>
         },
         card: {
             width: '48%',
-            backgroundColor: theme.colors.surfaceVariant,
-            borderRadius: 16,
-            padding: 16,
+            borderRadius: 20,
+            paddingVertical: 20,
+            paddingHorizontal: 18,
             alignItems: 'center',
-            elevation: 2,
-            marginBottom: 10,
-            borderWidth: StyleSheet.hairlineWidth,
-            borderColor: theme.colors.border,
+            elevation: 6,
+            marginBottom: 14,
+            shadowColor: 'rgba(15, 23, 42, 0.18)',
+            shadowOffset: { width: 0, height: 8 },
+            shadowOpacity: 0.15,
+            shadowRadius: 14,
+            borderWidth: 0,
         },
         iconContainer: {
-            marginBottom: 10,
+            width: 62,
+            height: 62,
+            borderRadius: 31,
+            alignItems: 'center',
+            justifyContent: 'center',
+            marginBottom: 12,
+            backgroundColor: theme.mode === 'dark' ? 'rgba(15, 23, 42, 0.45)' : 'rgba(255, 255, 255, 0.75)',
+            shadowColor: 'rgba(15, 23, 42, 0.15)',
+            shadowOffset: { width: 0, height: 4 },
+            shadowOpacity: 0.4,
+            shadowRadius: 6,
         },
         cardTitle: {
-            fontSize: 12,
+            fontSize: 13,
             fontWeight: 'bold',
             textAlign: 'center',
             marginBottom: 4,
@@ -512,6 +570,7 @@ const createStyles = (theme: AppTheme) =>
         viewStatus: {
             fontSize: 10,
             color: theme.colors.subtext,
+            textAlign: 'center',
         },
         section: {
             marginBottom: 24,

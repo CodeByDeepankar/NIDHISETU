@@ -10,6 +10,7 @@ import { DefaultTheme, NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { useMemo } from 'react';
 import { Alert, StyleSheet, TouchableOpacity, View } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useT } from 'lingo.dev/react';
 
 import { AppIcon } from '@/components/atoms/app-icon';
@@ -161,25 +162,40 @@ const BeneficiaryDrawerNavigator = () => {
   const profile = useAuthStore((state) => state.profile);
   const logout = useAuthStore((state) => state.actions.logout);
   const t = useT();
+  const drawerPalette = useMemo(
+    () => ({
+      headerStart: '#D9FBE5',
+      headerEnd: '#8FE3B6',
+      background: '#F6FFF7',
+      border: '#CFF5DA',
+      icon: '#0F5132',
+      accent: 'rgba(15, 81, 50, 0.08)',
+      inactive: '#5E8F7A',
+    }),
+    []
+  );
 
   return (
     <BeneficiaryDrawer.Navigator
       screenOptions={({ route }) => ({
         headerShown: false,
-        drawerActiveTintColor: theme.colors.onPrimary,
-        drawerInactiveTintColor: theme.colors.subtext,
-        drawerActiveBackgroundColor: theme.colors.primary,
+        drawerActiveTintColor: drawerPalette.icon,
+        drawerInactiveTintColor: drawerPalette.inactive,
+        drawerActiveBackgroundColor: drawerPalette.accent,
         drawerInactiveBackgroundColor: 'transparent',
         drawerStyle: {
-          backgroundColor: theme.colors.surface,
+          backgroundColor: drawerPalette.background,
           width: '80%',
-          borderRightWidth: theme.mode === 'dark' ? 0 : 1,
-          borderRightColor: theme.colors.border,
+          borderRightWidth: 0,
+          paddingTop: 0,
+          paddingBottom: 12,
         },
-        drawerContentStyle: { backgroundColor: theme.colors.surface },
+        drawerContentStyle: { backgroundColor: drawerPalette.background },
         drawerItemStyle: {
-          borderRadius: theme.radii.lg,
-          marginHorizontal: 12,
+          borderRadius: 14,
+          marginHorizontal: 16,
+          marginVertical: 6,
+          paddingVertical: 6,
         },
         drawerLabelStyle: {
           fontSize: 16,
@@ -200,6 +216,7 @@ const BeneficiaryDrawerNavigator = () => {
           beneficiaryName={profile?.name ?? 'Beneficiary'}
           beneficiaryVillage={profile?.role === 'beneficiary' ? profile.village : undefined}
           onLogout={logout}
+          palette={drawerPalette}
         />
       )}
     >
@@ -361,12 +378,23 @@ type BeneficiaryDrawerContentProps = DrawerContentComponentProps & {
   beneficiaryName: string;
   beneficiaryVillage?: string;
   onLogout: () => void;
+  palette: DrawerPalette;
 };
 
-const BeneficiaryDrawerContent = ({ beneficiaryName, beneficiaryVillage, onLogout, ...props }: BeneficiaryDrawerContentProps) => {
+type DrawerPalette = {
+  headerStart: string;
+  headerEnd: string;
+  background: string;
+  border: string;
+  icon: string;
+  accent: string;
+  inactive: string;
+};
+
+const BeneficiaryDrawerContent = ({ beneficiaryName, beneficiaryVillage, onLogout, palette, ...props }: BeneficiaryDrawerContentProps) => {
   const theme = useAppTheme();
   const t = useT();
-  const styles = useMemo(() => createBeneficiaryDrawerStyles(theme), [theme]);
+  const styles = useMemo(() => createBeneficiaryDrawerStyles(theme, palette), [theme, palette]);
 
   const handleLogout = () => {
     Alert.alert(t('Logout'), t('Are you sure you want to sign out?'), [
@@ -384,23 +412,30 @@ const BeneficiaryDrawerContent = ({ beneficiaryName, beneficiaryVillage, onLogou
 
   return (
     <View style={styles.container}>
-      <View style={styles.profileHeader}>
-        <AppText style={styles.brand}>NIDHISETU</AppText>
-        <AppText style={styles.beneficiaryName} numberOfLines={1}>
-          {beneficiaryName}
-        </AppText>
-        {beneficiaryVillage ? (
-          <AppText style={styles.beneficiaryMeta} numberOfLines={1}>
-            {beneficiaryVillage}
+      <LinearGradient
+        colors={[palette.headerStart, palette.headerEnd]}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+        style={styles.headerGradient}
+      >
+        <View style={styles.profileHeader}>
+          <AppText style={styles.brand}>NIDHISETU</AppText>
+          <AppText style={styles.beneficiaryName} numberOfLines={1}>
+            {beneficiaryName}
           </AppText>
-        ) : null}
-      </View>
+          {beneficiaryVillage ? (
+            <AppText style={styles.beneficiaryMeta} numberOfLines={1}>
+              {beneficiaryVillage}
+            </AppText>
+          ) : null}
+        </View>
+      </LinearGradient>
       <DrawerContentScrollView {...props} contentContainerStyle={styles.drawerScrollContent}>
         <DrawerItemList {...props} />
       </DrawerContentScrollView>
       <View style={styles.logoutSection}>
         <TouchableOpacity onPress={handleLogout} style={styles.logoutButton}>
-          <AppIcon name="power" size={24} color={theme.colors.onSecondary} />
+          <AppIcon name="power" size={24} color="#FFFFFF" />
         </TouchableOpacity>
       </View>
     </View>
@@ -451,51 +486,69 @@ const OfficerDrawerContent = ({ officerName, officerMobile, onLogout, ...props }
   );
 };
 
-const createBeneficiaryDrawerStyles = (theme: AppTheme) =>
+const createBeneficiaryDrawerStyles = (theme: AppTheme, palette: DrawerPalette) =>
   StyleSheet.create({
     container: {
       flex: 1,
-      backgroundColor: theme.colors.surface,
+      backgroundColor: palette.background,
+      borderTopRightRadius: 32,
+      borderBottomRightRadius: 32,
+      overflow: 'hidden',
+      shadowColor: '#000',
+      shadowOffset: { width: -6, height: 8 },
+      shadowOpacity: 0.08,
+      shadowRadius: 16,
+      elevation: 12,
+      borderRightWidth: StyleSheet.hairlineWidth,
+      borderRightColor: palette.border,
     },
-    profileHeader: {
+    headerGradient: {
       paddingHorizontal: 24,
       paddingTop: 60,
-      paddingBottom: 24,
-      backgroundColor: theme.colors.primary,
-      borderBottomLeftRadius: theme.radii.lg,
-      borderBottomRightRadius: theme.radii.lg,
-      gap: 4,
+      paddingBottom: 32,
+      borderBottomLeftRadius: 32,
+      borderBottomRightRadius: 32,
+    },
+    profileHeader: {
+      gap: 6,
     },
     brand: {
       fontSize: 24,
       fontWeight: 'bold',
-      color: theme.colors.onPrimary,
+      color: palette.icon,
+      letterSpacing: 0.5,
     },
     beneficiaryName: {
       fontSize: 16,
-      fontWeight: '600',
-      color: theme.colors.onPrimary,
+      fontWeight: '500',
+      color: palette.icon,
+      opacity: 0.9,
     },
     beneficiaryMeta: {
       fontSize: 13,
-      color: theme.colors.onPrimary,
-      opacity: 0.85,
+      color: palette.icon,
+      opacity: 0.7,
     },
     drawerScrollContent: {
       paddingTop: 0,
-      backgroundColor: theme.colors.surface,
+      backgroundColor: palette.background,
     },
     logoutSection: {
       paddingHorizontal: 24,
       paddingBottom: 40,
       paddingTop: 12,
-      backgroundColor: theme.colors.surface,
+      backgroundColor: palette.background,
     },
     logoutButton: {
       alignSelf: 'flex-end',
-      backgroundColor: theme.colors.secondary,
-      padding: 12,
+      backgroundColor: palette.icon,
+      padding: 14,
       borderRadius: theme.radii.pill,
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 6 },
+      shadowOpacity: 0.18,
+      shadowRadius: 12,
+      elevation: 6,
     },
   });
 
