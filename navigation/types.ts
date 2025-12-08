@@ -3,6 +3,8 @@ export type AuthStackParamList = {
   MobileInput: undefined;
   OtpVerification: { mobile?: string } | undefined;
   Onboarding: undefined;
+  SetPin: undefined;
+  EnterPin: { reason?: string; mobile?: string } | undefined;
 };
 
 export type BeneficiaryDrawerParamList = {

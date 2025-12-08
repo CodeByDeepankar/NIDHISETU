@@ -1,3 +1,4 @@
+import { StackActions } from '@react-navigation/native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
@@ -8,6 +9,8 @@ import { AppIcon } from '@/components/atoms/app-icon';
 import { AppText } from '@/components/atoms/app-text';
 import { InputField } from '@/components/atoms/input-field';
 import { useAuthActions } from '@/hooks/use-auth-actions';
+import { useDeviceFingerprint } from '@/hooks/useDeviceFingerprint';
+import { useAuthStore } from '@/state/authStore';
 import type { AuthStackParamList } from '@/navigation/types';
 
 interface FormValues {
@@ -19,6 +22,8 @@ export type OtpVerificationScreenProps = NativeStackScreenProps<AuthStackParamLi
 export const OtpVerificationScreen = ({ navigation, route }: OtpVerificationScreenProps) => {
   const { mobile } = route.params ?? {};
   const { verifyOtp, requestOtp, status, errors: authErrors } = useAuthActions();
+  const { evaluateFingerprintTrust } = useDeviceFingerprint();
+  const completeOnboarding = useAuthStore((state) => state.actions.completeOnboarding);
   const {
     setValue,
     handleSubmit,
@@ -36,8 +41,43 @@ export const OtpVerificationScreen = ({ navigation, route }: OtpVerificationScre
 
   const onSubmit = handleSubmit(async ({ otp }) => {
     try {
-      await verifyOtp(otp, mobile);
-      navigation.navigate('Onboarding');
+      const result = await verifyOtp(otp, mobile);
+
+      // After OTP success, decide whether to auto-login, prompt PIN, or set PIN.
+      const beneficiaryId = result?.profile?.id;
+
+      if (!beneficiaryId) {
+        navigation.replace('Onboarding');
+        return;
+      }
+
+      let trust: Awaited<ReturnType<typeof evaluateFingerprintTrust>> | null = null;
+      try {
+        trust = await evaluateFingerprintTrust(beneficiaryId);
+      } catch (err) {
+        console.warn('Fingerprint trust evaluation failed; defaulting to SetPin', err);
+      }
+
+      if (!trust || !trust.stored) {
+        // No fingerprint stored yet or evaluation failed -> first-time PIN setup.
+        navigation.replace('SetPin');
+        return;
+      }
+
+      if (trust.isTrusted) {
+        // Known device -> proceed without PIN.
+        if (result.profile) {
+          completeOnboarding(result.profile);
+        }
+        navigation.getParent()?.dispatch(StackActions.replace('AppFlow'));
+        return;
+      }
+
+      // New/mismatched device -> ask for PIN.
+      navigation.replace('EnterPin', {
+        reason: 'New device detected. Please enter your PIN to continue.',
+        mobile: mobile ?? result?.mobile,
+      });
     } catch {
       // handled via hook errors
     }

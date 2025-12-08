@@ -78,7 +78,7 @@ const resolveProfile = async (mobile: string): Promise<UserProfile> => {
 };
 
 export const useAuthActions = () => {
-  const { requestOtp, verifyOtp, completeOnboarding, logout } = useAuthStore((state) => state.actions);
+  const { requestOtp, verifyOtp, completeOnboarding, logout, updateProfile, switchRole } = useAuthStore((state) => state.actions);
   const storedMobile = useAuthStore((state) => state.mobile);
 
   const requestOtpMutation = useMutation({
@@ -122,7 +122,9 @@ export const useAuthActions = () => {
     onSuccess: (data) => {
       verifyOtp(data.mobile);
       if (data.profile) {
-        completeOnboarding(data.profile);
+        // Set profile and role, but defer onboarding completion until PIN/fingerprint flow.
+        updateProfile(data.profile);
+        switchRole(data.profile.role);
       }
     },
   });

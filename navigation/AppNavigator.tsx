@@ -1,4 +1,5 @@
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
+import type { BottomTabNavigationOptions } from '@react-navigation/bottom-tabs';
 import {
     createDrawerNavigator,
     DrawerContentComponentProps,
@@ -7,7 +8,6 @@ import {
 } from '@react-navigation/drawer';
 import { DefaultTheme, NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
-import { LinearGradient } from 'expo-linear-gradient';
 import { useMemo } from 'react';
 import { Alert, StyleSheet, TouchableOpacity, View } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -20,6 +20,8 @@ import { useAppTheme } from '@/hooks/use-app-theme';
 import { MobileInputScreen } from '@/screens/auth/mobile-input-screen';
 import { OnboardingScreen } from '@/screens/auth/onboarding-screen';
 import { OtpVerificationScreen } from '@/screens/auth/otp-verification-screen';
+import { SetPinScreen } from '@/screens/auth/SetPinScreen';
+import { EnterPinScreen } from '@/screens/auth/EnterPinScreen';
 import { WelcomeScreen } from '@/screens/auth/welcome-screen';
 import { ContactOfficerScreen } from '@/screens/beneficiary/contact-officer-screen';
 import { BeneficiaryDashboardScreen } from '@/screens/beneficiary/dashboard-screen';
@@ -68,14 +70,15 @@ const AuthNavigator = () => (
     <AuthStack.Screen name="Welcome" component={WelcomeScreen} />
     <AuthStack.Screen name="MobileInput" component={MobileInputScreen} />
     <AuthStack.Screen name="OtpVerification" component={OtpVerificationScreen} />
+    <AuthStack.Screen name="SetPin" component={SetPinScreen} />
+    <AuthStack.Screen name="EnterPin" component={EnterPinScreen} />
     <AuthStack.Screen name="Onboarding" component={OnboardingScreen} />
   </AuthStack.Navigator>
 );
 
 const BeneficiaryTabNavigator = () => {
   const theme = useAppTheme();
-
-  const tabScreenOptions = useMemo(
+  const tabScreenOptions = useMemo<BottomTabNavigationOptions>(
     () => ({
       headerShown: false,
       tabBarStyle: {
@@ -115,7 +118,7 @@ const BeneficiaryTabNavigator = () => {
   );
 
   return (
-    <Tab.Navigator screenOptions={tabScreenOptions} sceneContainerStyle={{ backgroundColor: theme.colors.background }}>
+    <Tab.Navigator screenOptions={tabScreenOptions}>
       <Tab.Screen
         name="Home"
         component={BeneficiaryDashboardScreen}
