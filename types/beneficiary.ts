@@ -69,15 +69,15 @@ export interface OfficerContext {
   region?: string;
 }
 
-export interface TimelineEvent {
+export interface BeneficiaryTimelineEntry {
   status: string;
   reason?: string;
   timestamp: string;
 }
 
-export interface Note {
+export interface BeneficiaryNoteEntry {
   text: string;
-  author: string;
+  author?: string;
   timestamp: string;
 }
 
@@ -87,8 +87,8 @@ export interface BeneficiaryMetadata {
   updatedAt: string;
   status: string;
   statusReason?: string;
-  timeline?: TimelineEvent[];
-  notes?: Note[];
+  timeline?: BeneficiaryTimelineEntry[];
+  notes?: BeneficiaryNoteEntry[];
   docCount: number;
   completionPercent: number;
   createdBy?: OfficerContext;

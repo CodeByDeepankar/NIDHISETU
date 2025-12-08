@@ -8,12 +8,29 @@ import { WaveHeader } from '@/components/molecules/wave-header';
 import { useAppTheme } from '@/hooks/use-app-theme';
 import { useOfficerBeneficiaries } from '@/hooks/use-officer-beneficiaries';
 
+type TaskItem = {
+  id: string;
+  name: string;
+  priority: string;
+  status: string;
+  updatedAt?: string;
+  village?: string | null;
+  docCount: number;
+  loanId?: string;
+  bank?: string;
+  loanAmount?: number;
+  lastSynced?: string;
+  uploads?: Array<{ title: string; detail?: string }>;
+  analysis?: string[];
+  actions?: string[];
+};
+
 export const VerificationTasksScreen = () => {
   const theme = useAppTheme();
   const navigation = useNavigation();
   const { records, isLoading, isRefreshing, refresh } = useOfficerBeneficiaries();
 
-  const tasks = useMemo(() => {
+  const tasks = useMemo<TaskItem[]>(() => {
     return records
       .filter((record) => (record.metadata?.status ?? '').toLowerCase() !== 'approved')
       .map((record) => ({
@@ -24,10 +41,61 @@ export const VerificationTasksScreen = () => {
         updatedAt: record.metadata?.updatedAt,
         village: record.village,
         docCount: record.metadata?.docCount ?? 0,
+        loanId: record.metadata?.loanId,
+        bank: record.bankName,
+        loanAmount: record.metadata?.loanAmount,
       }));
   }, [records]);
 
-  const TaskCard = ({ item }: { item: (typeof tasks)[number] }) => (
+  const fallbackTasks: TaskItem[] = useMemo(
+    () => [
+      {
+        id: 'demo-priya',
+        name: 'Priya Sharma',
+        priority: 'High',
+        status: 'Pending Verification',
+        updatedAt: '2025-12-04T16:22:00+05:30',
+        village: 'SBI Rural Branch',
+        docCount: 2,
+        loanId: 'LN-0015',
+        bank: 'SBI',
+        loanAmount: 512000,
+        lastSynced: '04 Dec 2025, 4:22 PM',
+        uploads: [
+          { title: 'Asset Photo 1', detail: 'Tractor Engine — Geo-tagged' },
+          { title: 'Asset Photo 2', detail: 'Invoice — Geo-tagged' },
+        ],
+        analysis: [
+          'Invoice authenticity: 92% match',
+          'Object detected: Agricultural Equipment',
+          'Location variance: 0.8 km from sanctioned area (Flagged yellow)',
+        ],
+        actions: [
+          'Verify location mismatch',
+          'Confirm invoice details',
+          'Approve or Reject uploads',
+        ],
+      },
+    ],
+    []
+  );
+
+  const data = tasks.length ? tasks : fallbackTasks;
+
+  const statusColor = (status: string) => {
+    const lowered = status.toLowerCase();
+    if (lowered.includes('pending')) return '#F59E0B';
+    if (lowered.includes('approved') || lowered.includes('verified')) return '#16A34A';
+    if (lowered.includes('reject')) return '#DC2626';
+    return '#6B7280';
+  };
+
+  const formatCurrency = (value?: number) => {
+    if (!value) return '—';
+    return `₹${value.toLocaleString('en-IN')}`;
+  };
+
+  const TaskCard = ({ item }: { item: TaskItem }) => (
     <TouchableOpacity style={styles.card} activeOpacity={0.7} onPress={() => {}}>
       <View style={styles.cardHeader}>
         <View style={styles.headerLeft}>
@@ -46,6 +114,32 @@ export const VerificationTasksScreen = () => {
         </View>
       </View>
 
+      <View style={styles.metaGrid}>
+        <View style={styles.metaItem}>
+          <AppText style={styles.metaLabel}>Loan ID</AppText>
+          <AppText style={styles.metaValue}>{item.loanId ?? '—'}</AppText>
+        </View>
+        <View style={styles.metaItem}>
+          <AppText style={styles.metaLabel}>Bank</AppText>
+          <AppText style={styles.metaValue}>{item.bank ?? '—'}</AppText>
+        </View>
+        <View style={styles.metaItem}>
+          <AppText style={styles.metaLabel}>Loan Amount</AppText>
+          <AppText style={styles.metaValue}>{formatCurrency(item.loanAmount)}</AppText>
+        </View>
+        <View style={styles.metaItem}>
+          <AppText style={styles.metaLabel}>Status</AppText>
+          <AppText style={[styles.metaValue, { color: statusColor(item.status) }]}>{item.status}</AppText>
+        </View>
+      </View>
+
+      {item.lastSynced ? (
+        <View style={styles.syncedRow}>
+          <Ionicons name="cloud-done-outline" size={16} color="#0F9D58" />
+          <AppText style={styles.syncedText}>Last synced: {item.lastSynced}</AppText>
+        </View>
+      ) : null}
+
       <View style={styles.cardBody}>
         <View style={styles.infoItem}>
           <Ionicons name="document-text-outline" size={16} color="#6B7280" />
@@ -56,6 +150,45 @@ export const VerificationTasksScreen = () => {
           <AppText style={styles.infoText}>{formatTimestamp(item.updatedAt)}</AppText>
         </View>
       </View>
+
+      {item.uploads ? (
+        <View style={styles.sectionBlock}>
+          <AppText style={styles.sectionTitle}>Uploads</AppText>
+          {item.uploads.map((upload) => (
+            <View key={upload.title} style={styles.bulletRow}>
+              <Ionicons name="images-outline" size={16} color="#0F9D58" />
+              <AppText style={styles.bulletText}>
+                {upload.title}
+                {upload.detail ? ` (${upload.detail})` : ''}
+              </AppText>
+            </View>
+          ))}
+        </View>
+      ) : null}
+
+      {item.analysis ? (
+        <View style={styles.sectionBlock}>
+          <AppText style={styles.sectionTitle}>AI Analysis</AppText>
+          {item.analysis.map((line) => (
+            <View key={line} style={styles.bulletRow}>
+              <Ionicons name="sparkles-outline" size={16} color="#6366F1" />
+              <AppText style={styles.bulletText}>{line}</AppText>
+            </View>
+          ))}
+        </View>
+      ) : null}
+
+      {item.actions ? (
+        <View style={styles.sectionBlock}>
+          <AppText style={styles.sectionTitle}>Officer Action Required</AppText>
+          {item.actions.map((line) => (
+            <View key={line} style={styles.bulletRow}>
+              <Ionicons name="alert-circle-outline" size={16} color="#F59E0B" />
+              <AppText style={styles.bulletText}>{line}</AppText>
+            </View>
+          ))}
+        </View>
+      ) : null}
 
       <View style={styles.cardFooter}>
         <TouchableOpacity style={styles.reviewButton}>
@@ -73,7 +206,7 @@ export const VerificationTasksScreen = () => {
       <View style={styles.contentContainer}>
         <FlatList
           contentContainerStyle={styles.listContent}
-          data={tasks}
+          data={data}
           keyExtractor={(t) => t.id}
           renderItem={({ item }) => <TaskCard item={item} />}
           refreshControl={<RefreshControl refreshing={isRefreshing} onRefresh={refresh} />}
@@ -84,7 +217,7 @@ export const VerificationTasksScreen = () => {
               <View style={styles.emptyState}>
                 <Ionicons name="checkmark-circle-outline" size={48} color="#10B981" />
                 <AppText style={styles.emptyText}>
-                  {tasks.length ? null : 'All caught up! No pending tasks.'}
+                  {data.length ? null : 'All caught up! No pending tasks.'}
                 </AppText>
               </View>
             )
@@ -163,6 +296,40 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: '#6B7280',
   },
+  metaGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 12,
+    marginBottom: 12,
+  },
+  metaItem: {
+    width: '48%',
+  },
+  metaLabel: {
+    fontSize: 11,
+    color: '#6B7280',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  metaValue: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#111827',
+  },
+  syncedRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingVertical: 6,
+    borderRadius: 8,
+    backgroundColor: '#ECFDF3',
+    paddingHorizontal: 10,
+    marginBottom: 8,
+  },
+  syncedText: {
+    fontSize: 12,
+    color: '#065F46',
+  },
   priorityBadge: {
     paddingHorizontal: 8,
     paddingVertical: 4,
@@ -200,6 +367,28 @@ const styles = StyleSheet.create({
   infoText: {
     fontSize: 13,
     color: '#4B5563',
+  },
+  sectionBlock: {
+    paddingVertical: 10,
+    borderTopWidth: 1,
+    borderTopColor: '#F3F4F6',
+  },
+  sectionTitle: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#0F172A',
+    marginBottom: 8,
+  },
+  bulletRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: 6,
+  },
+  bulletText: {
+    flex: 1,
+    fontSize: 13,
+    color: '#374151',
   },
   cardFooter: {
     flexDirection: 'row',

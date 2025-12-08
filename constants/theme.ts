@@ -96,8 +96,8 @@ const lightColors = {
   infoContainer: '#E0F2FE',
   card: '#F4F4F4',
   overlay: 'rgba(15, 23, 42, 0.6)',
-  gradientStart: '#2563EB',
-  gradientEnd: '#3B82F6',
+  gradientStart: '#008080',
+  gradientEnd: '#20B2AA',
 };
 
 const darkColors: typeof lightColors = {
@@ -132,8 +132,8 @@ const darkColors: typeof lightColors = {
   infoContainer: '#1E3A8A',
   card: '#1A1A1A',
   overlay: 'rgba(0, 0, 0, 0.75)',
-  gradientStart: '#1D4ED8',
-  gradientEnd: '#3B82F6',
+  gradientStart: '#006b6b',
+  gradientEnd: '#1aa7a7',
 };
 
 export interface AppTheme {

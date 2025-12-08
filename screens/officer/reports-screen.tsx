@@ -3,7 +3,15 @@ import { AppIcon } from '@/components/atoms/app-icon';
 import { AppText } from '@/components/atoms/app-text';
 import { WaveHeader } from '@/components/molecules/wave-header';
 import { useAppTheme } from '@/hooks/use-app-theme';
-import { ScrollView, StyleSheet, View } from 'react-native';
+import { ScrollView, StyleSheet, View, useWindowDimensions } from 'react-native';
+import Svg, { Circle, Defs, Stop, LinearGradient as SvgLinearGradient } from 'react-native-svg';
+
+const GAUGE_SIZE = 210;
+const GAUGE_STROKE = 22;
+const GAUGE_RADIUS = (GAUGE_SIZE - GAUGE_STROKE) / 2;
+const GAUGE_CIRCUMFERENCE = 2 * Math.PI * GAUGE_RADIUS;
+const GAUGE_SWEEP_DEG = 180;
+const GAUGE_SWEEP_RATIO = GAUGE_SWEEP_DEG / 360;
 
 export const ReportsScreen = () => {
   const theme = useAppTheme();
@@ -25,6 +33,8 @@ export const ReportsScreen = () => {
           <SummaryCard label="Pending" value="32" icon="clock-outline" color="#F59E0B" />
           <SummaryCard label="Rejected" value="6" icon="close-circle-outline" color="#EF4444" />
         </View>
+
+        <RiskScoringCard />
 
         <View style={[styles.card, { backgroundColor: theme.colors.surface }]}>
           <View style={styles.cardHeader}>
@@ -125,6 +135,220 @@ const ActivityItem = ({ title, subtitle, time, icon, color }: { title: string; s
   );
 };
 
+type Tone = 'primary' | 'warning' | 'error' | 'info';
+type AlertBadge = { label: string; tone: Tone };
+
+const documentAlerts: Array<{
+  title: string;
+  entity: string;
+  modified: string;
+  badges: AlertBadge[];
+}> = [
+  {
+    title: 'Bank Statement',
+    entity: 'Saaet Finance',
+    modified: '27 March, 2022',
+    badges: [
+      { label: 'Mismatched Fonts', tone: 'error' },
+      { label: 'Possible Tampering', tone: 'warning' },
+    ],
+  },
+  {
+    title: 'Company Letterhead',
+    entity: 'Arcadia Textiles',
+    modified: 'Auto-generated',
+    badges: [{ label: 'Layer Irregularity', tone: 'info' }],
+  },
+];
+
+const riskBreakdown: Array<{ label: string; value: number; tone: Tone }> = [
+  { label: 'Font Inconsistency', value: 92, tone: 'error' },
+  { label: 'Metadata Mismatch', value: 75, tone: 'info' },
+  { label: 'Layer Manipulation', value: 81, tone: 'warning' },
+  { label: 'Cross-Document Mismatch', value: 66, tone: 'primary' },
+  { label: 'Image Tampering', value: 78, tone: 'error' },
+];
+
+const RiskScoringCard = () => {
+  const theme = useAppTheme();
+  const { width } = useWindowDimensions();
+  const isWide = width > 900;
+  const score = 82;
+  const minAngle = -180;
+  const maxAngle = 0;
+  const scoreAngle = minAngle + (score / 100) * (maxAngle - minAngle);
+  const sweepLength = GAUGE_CIRCUMFERENCE * GAUGE_SWEEP_RATIO;
+  const progressLength = sweepLength * (score / 100);
+  const gradientId = 'riskGaugeGradient';
+  const resolveTone = (tone: Tone) => {
+    switch (tone) {
+      case 'warning':
+        return { fill: theme.colors.warning, track: `${theme.colors.warning}33` };
+      case 'error':
+        return { fill: theme.colors.error, track: `${theme.colors.error}33` };
+      case 'info':
+        return { fill: theme.colors.info, track: `${theme.colors.info}33` };
+      default:
+        return { fill: theme.colors.primary, track: `${theme.colors.primary}33` };
+    }
+  };
+
+  return (
+    <View style={[styles.card, styles.riskCard, { backgroundColor: theme.colors.surface }]}>
+      <View style={styles.cardHeader}>
+        <View>
+          <AppText variant="titleMedium" color="text" weight="600">
+            AI-Powered Document Risk Scoring
+          </AppText>
+          <AppText variant="bodySmall" color="muted">
+            Highlights suspicious signals across uploaded proofs
+          </AppText>
+        </View>
+        <AppButton label="View All Flags" size="small" variant="ghost" icon="shield-alert" />
+      </View>
+
+      <View style={[styles.riskGrid, isWide ? styles.riskGridWide : styles.riskGridStack]}>
+        <View style={[styles.riskColumn, { backgroundColor: theme.colors.infoContainer }]}>
+          <AppText variant="labelMedium" color="muted" style={{ marginBottom: 8 }}>
+            Uploaded Documents
+          </AppText>
+          {documentAlerts.map((doc) => (
+            <View
+              key={doc.title}
+              style={[styles.docCard, { borderColor: `${theme.colors.border}80`, backgroundColor: theme.colors.surface }]}
+            >
+              <View style={styles.docHeader}>
+                <AppIcon name="file-document" size={20} color={theme.colors.primary} />
+                <View style={{ flex: 1 }}>
+                  <AppText variant="bodyMedium" color="text" weight="600">
+                    {doc.title}
+                  </AppText>
+                  <AppText variant="bodySmall" color="muted">
+                    {doc.entity}
+                  </AppText>
+                </View>
+                <AppText variant="labelSmall" color="muted">
+                  {doc.modified}
+                </AppText>
+              </View>
+              <View style={styles.badgeRow}>
+                {doc.badges.map((badge) => {
+                  const palette = resolveTone(badge.tone as Tone);
+                  return (
+                    <View
+                      key={badge.label}
+                      style={[styles.badge, { backgroundColor: palette.track }]}
+                    >
+                      <AppIcon name="alert-circle" size={14} color={palette.fill} />
+                      <AppText variant="labelSmall" style={{ color: palette.fill, fontWeight: '600' }}>
+                        {badge.label}
+                      </AppText>
+                    </View>
+                  );
+                })}
+              </View>
+            </View>
+          ))}
+        </View>
+
+        <View style={[styles.riskColumn, styles.scorePanel, { backgroundColor: theme.colors.primaryContainer }]}> 
+          <AppText variant="labelMedium" color="muted">
+            Risk Score
+          </AppText>
+          <View style={styles.gaugeWrapper}>
+            <View style={styles.gaugeSvgWrapper}>
+              <Svg width={GAUGE_SIZE} height={GAUGE_SIZE}>
+                <Defs>
+                  <SvgLinearGradient id={gradientId} x1="0%" y1="50%" x2="100%" y2="50%" gradientUnits="userSpaceOnUse">
+                    <Stop offset="0%" stopColor="#DC2626" />
+                    <Stop offset="45%" stopColor="#F97316" />
+                    <Stop offset="100%" stopColor="#16A34A" />
+                  </SvgLinearGradient>
+                </Defs>
+                <Circle
+                  cx={GAUGE_SIZE / 2}
+                  cy={GAUGE_SIZE / 2}
+                  r={GAUGE_RADIUS}
+                  stroke={`url(#${gradientId})`}
+                  strokeOpacity={0.25}
+                  strokeWidth={GAUGE_STROKE}
+                  fill="none"
+                  strokeLinecap="round"
+                  strokeDasharray={`${sweepLength} ${GAUGE_CIRCUMFERENCE}`}
+                  transform={`rotate(-180 ${GAUGE_SIZE / 2} ${GAUGE_SIZE / 2})`}
+                />
+                <Circle
+                  cx={GAUGE_SIZE / 2}
+                  cy={GAUGE_SIZE / 2}
+                  r={GAUGE_RADIUS}
+                  stroke={`url(#${gradientId})`}
+                  strokeWidth={GAUGE_STROKE}
+                  fill="none"
+                  strokeLinecap="round"
+                  strokeDasharray={`${sweepLength} ${GAUGE_CIRCUMFERENCE}`}
+                  strokeDashoffset={`${sweepLength - progressLength}`}
+                  transform={`rotate(-180 ${GAUGE_SIZE / 2} ${GAUGE_SIZE / 2})`}
+                />
+              </Svg>
+            </View>
+            <View style={styles.gaugeInnerContent}>
+              <AppText variant="displayLarge" color="text" weight="700">
+                {score}
+              </AppText>
+              <AppText variant="bodyMedium" color="muted">
+                / 100
+              </AppText>
+              <View style={[styles.riskPill, { backgroundColor: theme.colors.error }]}> 
+                <AppText variant="labelMedium" color="onPrimary" weight="600">
+                  High Risk
+                </AppText>
+              </View>
+            </View>
+          </View>
+          <View style={styles.gaugeScale}>
+            <AppText variant="labelSmall" color="muted">
+              0
+            </AppText>
+            <AppText variant="labelSmall" color="muted">
+              100
+            </AppText>
+          </View>
+          <View style={[styles.aiNote, { backgroundColor: `${theme.colors.info}18` }]}>
+            <AppIcon name="robot" size={16} color={theme.colors.info} />
+            <AppText variant="labelSmall" color="muted">
+              AI Recommendation: Manual review required
+            </AppText>
+          </View>
+        </View>
+
+        <View style={[styles.riskColumn, { backgroundColor: theme.colors.surfaceVariant }]}>
+          <AppText variant="labelMedium" color="muted" style={{ marginBottom: 8 }}>
+            Risk Breakdown
+          </AppText>
+          {riskBreakdown.map((item) => {
+            const palette = resolveTone(item.tone as Tone);
+            return (
+              <View key={item.label} style={styles.breakdownRow}>
+                <View style={styles.breakdownHeader}>
+                  <AppText variant="bodyMedium" color="text" weight="500">
+                    {item.label}
+                  </AppText>
+                  <AppText variant="bodyMedium" color="text" weight="600" style={{ color: palette.fill }}>
+                    {item.value}%
+                  </AppText>
+                </View>
+                <View style={[styles.riskBarTrack, { backgroundColor: palette.track }]}>
+                  <View style={[styles.riskBarFill, { width: `${item.value}%`, backgroundColor: palette.fill }]} />
+                </View>
+              </View>
+            );
+          })}
+        </View>
+      </View>
+    </View>
+  );
+};
+
 const styles = StyleSheet.create({
   container: {
     flex: 1,
@@ -207,5 +431,116 @@ const styles = StyleSheet.create({
   },
   activityContent: {
     flex: 1,
+  },
+  riskCard: {
+    paddingBottom: 24,
+  },
+  riskGrid: {
+    gap: 16,
+    width: '100%',
+  },
+  riskGridStack: {
+    flexDirection: 'column',
+  },
+  riskGridWide: {
+    flexDirection: 'row',
+  },
+  riskColumn: {
+    flex: 1,
+    padding: 12,
+    borderRadius: 16,
+    gap: 12,
+  },
+  docCard: {
+    borderRadius: 14,
+    padding: 12,
+    borderWidth: 1,
+    marginBottom: 12,
+    gap: 12,
+  },
+  docHeader: {
+    flexDirection: 'row',
+    gap: 12,
+    alignItems: 'center',
+  },
+  badgeRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+  },
+  badge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    borderRadius: 999,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+  },
+  scorePanel: {
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  gaugeWrapper: {
+    width: '100%',
+    alignItems: 'center',
+    marginVertical: 12,
+    position: 'relative',
+  },
+  gaugeSvgWrapper: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    width: GAUGE_SIZE,
+    height: GAUGE_SIZE,
+  },
+  gaugeInnerContent: {
+    position: 'absolute',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 24,
+  },
+  gaugeInner: {
+    width: '100%',
+    height: '100%',
+    borderRadius: 88,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  riskPill: {
+    marginTop: 12,
+    borderRadius: 999,
+    paddingHorizontal: 16,
+    paddingVertical: 6,
+  },
+  gaugeScale: {
+    width: '70%',
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 12,
+  },
+  aiNote: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    padding: 10,
+    borderRadius: 12,
+  },
+  breakdownRow: {
+    marginBottom: 12,
+    gap: 6,
+  },
+  breakdownHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  riskBarTrack: {
+    height: 8,
+    borderRadius: 999,
+    backgroundColor: '#E2E8F0',
+  },
+  riskBarFill: {
+    height: '100%',
+    borderRadius: 999,
+    backgroundColor: '#2563EB',
   },
 });
