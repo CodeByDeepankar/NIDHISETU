@@ -1,9 +1,12 @@
+import { useMemo } from 'react';
+
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { RefreshControl, ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native';
 
 import { AppText } from '@/components/atoms/app-text';
 import { WaveHeader } from '@/components/molecules/wave-header';
+import type { AppTheme } from '@/constants/theme';
 import { useAppTheme } from '@/hooks/use-app-theme';
 import { useOfficerBeneficiaries } from '@/hooks/use-officer-beneficiaries';
 import { useAuthStore } from '@/state/authStore';
@@ -13,54 +16,80 @@ export const OfficerDashboardScreen = () => {
   const theme = useAppTheme();
   const { analytics, isRefreshing, refresh } = useOfficerBeneficiaries();
   const profile = useAuthStore((state) => state.profile);
-  
-  const officerName = profile?.name ?? 'Officer';
+
+  const officerName = profile?.name ?? 'District Officer';
   const officerId = profile?.id ?? 'OFF-2024-001';
-  const designation = (profile as any)?.designation ?? 'District Officer';
   const region = (profile as any)?.region ?? 'Bhopal Division';
+  const palette = useMemo(() => buildDashboardPalette(theme), [theme]);
+  const styles = useMemo(() => createDashboardStyles(palette), [palette]);
 
   const handleRefresh = async () => {
     await refresh();
   };
 
-  const StatCard = ({ label, value, icon, color, onPress }: any) => (
-    <TouchableOpacity 
-      style={[styles.statCard, { borderLeftColor: color }]} 
-      onPress={onPress}
-      activeOpacity={0.7}
-    >
-      <View style={[styles.iconContainer, { backgroundColor: `${color}20` }]}>
-        <Ionicons name={icon} size={24} color={color} />
-      </View>
-      <View>
-        <AppText style={styles.statValue}>{value}</AppText>
-        <AppText style={styles.statLabel}>{label}</AppText>
-      </View>
-    </TouchableOpacity>
-  );
+  const highRiskCases = Math.max(Math.round((analytics?.pending ?? 10) * 0.4), 4);
+  const pendingReviews = analytics?.pending ?? 12;
+  const deadlineCrossed = Math.max(Math.round((analytics?.total ?? 30) * 0.08), 2);
 
-  const ActionCard = ({ title, count, icon, color, onPress, actionLabel = "View All" }: any) => (
-    <TouchableOpacity style={styles.actionCard} onPress={onPress} activeOpacity={0.8}>
-      <View style={styles.actionHeader}>
-        <View style={[styles.actionIcon, { backgroundColor: `${color}20` }]}>
-          <Ionicons name={icon} size={24} color={color} />
-        </View>
-        <View style={styles.badge}>
-          <AppText style={styles.badgeText}>{count}</AppText>
-        </View>
-      </View>
-      <AppText style={styles.actionTitle}>{title}</AppText>
-      <View style={styles.actionFooter}>
-        <AppText style={[styles.actionLink, { color }]}>{actionLabel}</AppText>
-        <Ionicons name="arrow-forward" size={16} color={color} />
-      </View>
-    </TouchableOpacity>
-  );
+  const alertSummaryCards = [
+    {
+      title: 'High Risk',
+      count: highRiskCases.toString().padStart(2, '0'),
+      caption: 'Require manual validation',
+      tone: palette.red,
+    },
+    {
+      title: 'Pending Review',
+      count: pendingReviews.toString().padStart(2, '0'),
+      caption: 'Awaiting officer action',
+      tone: palette.gold,
+    },
+    {
+      title: 'Deadline Crossed',
+      count: deadlineCrossed.toString().padStart(2, '0'),
+      caption: 'Escalate before EOD',
+      tone: palette.blue,
+    },
+  ];
+
+  const utilisationTrend = [
+    { label: 'Mar', value: 62 },
+    { label: 'Apr', value: 66 },
+    { label: 'May', value: 70 },
+    { label: 'Jun', value: 68 },
+    { label: 'Jul', value: 74 },
+    { label: 'Aug', value: 78 },
+  ];
+  const utilisationChange = 4.2;
+
+  const verificationQueue = [
+    { name: 'Priya Varma', scheme: 'PMEGP', status: 'Docs flagged', wait: '12 hrs' },
+    { name: 'Rahul Singh', scheme: 'Mudra', status: 'Site photo pending', wait: '5 hrs' },
+    { name: 'Asha Devi', scheme: 'Stand Up India', status: 'Video KYC due', wait: '2 hrs' },
+    { name: 'Karan Patel', scheme: 'PM SVANidhi', status: 'Income proof check', wait: '1 hr' },
+  ];
+
+  const quickActionShortcuts = [
+    { label: 'Approve Batch', icon: 'checkmark-done-circle', color: palette.green, onPress: () => navigation.navigate('VerificationTasks') },
+    { label: 'Request Re-upload', icon: 'cloud-upload-outline', color: palette.gold, onPress: () => navigation.navigate('Reports') },
+    { label: 'Schedule Field Visit', icon: 'map-outline', color: palette.blue, onPress: () => navigation.navigate('Reports') },
+    { label: 'Assign Officer', icon: 'people-outline', color: palette.navy, onPress: () => navigation.navigate('Reports') },
+    { label: 'Flag Risk', icon: 'alert-circle-outline', color: palette.red, onPress: () => navigation.navigate('Reports') },
+    { label: 'Export Utilisation', icon: 'download-outline', color: palette.slate, onPress: () => navigation.navigate('Reports') },
+  ];
+
+  const todaysTasks = [
+    { time: '09:30', duration: '15 min', title: 'Verify utilisation photos - Rahman Traders', tag: 'PMEGP', status: 'Awaiting media' },
+    { time: '11:00', duration: '20 min', title: 'Call borrower - Seema Textile', tag: 'Mudra', status: 'Pending phone log' },
+    { time: '14:15', duration: '30 min', title: 'Approve field report - Ward 4', tag: 'Field', status: 'Inspection complete' },
+    { time: '16:00', duration: '10 min', title: 'Escalate overdue files (3)', tag: 'Compliance', status: 'Deadline today' },
+  ];
 
   return (
     <View style={styles.container}>
-      <WaveHeader 
-        title="Dashboard" 
+      <WaveHeader
+        title="Loan Monitoring"
+        subtitle="District intelligence & tasks"
         rightAction={
           <TouchableOpacity onPress={() => navigation.navigate('Notifications')}>
             <Ionicons name="notifications-outline" size={24} color="white" />
@@ -73,258 +102,521 @@ export const OfficerDashboardScreen = () => {
         refreshControl={<RefreshControl refreshing={isRefreshing} onRefresh={handleRefresh} />}
         showsVerticalScrollIndicator={false}
       >
-        {/* Officer Profile Card */}
-        <View style={styles.profileCard}>
-          <View style={styles.profileHeader}>
-            <View style={styles.avatarContainer}>
-              <Ionicons name="person" size={32} color="white" />
-            </View>
-            <View style={styles.profileInfo}>
-              <AppText style={styles.profileName}>{officerName}</AppText>
-              <AppText style={styles.profileDesignation}>{designation}</AppText>
-            </View>
+        <View style={styles.profileStrip}>
+          <View style={styles.profileIdentity}>
+            <AppText style={styles.profileName}>{officerName}</AppText>
+            <AppText style={styles.profileMeta}>{region}</AppText>
           </View>
-          <View style={styles.profileDetails}>
-            <View style={styles.detailItem}>
-              <Ionicons name="id-card-outline" size={16} color="#666" />
-              <AppText style={styles.detailText}>{officerId}</AppText>
+          <View style={styles.profileBadges}>
+            <View style={styles.profileBadge}>
+              <Ionicons name="shield-checkmark" size={16} color={palette.green} />
+              <AppText style={styles.profileBadgeText}>District</AppText>
             </View>
-            <View style={styles.detailItem}>
-              <Ionicons name="location-outline" size={16} color="#666" />
-              <AppText style={styles.detailText}>{region}</AppText>
-            </View>
+            <AppText style={styles.profileId}>{officerId}</AppText>
           </View>
         </View>
 
-        {/* Loan Activity Insights */}
-        <AppText style={styles.sectionTitle}>Loan Activity</AppText>
-        <View style={styles.statsGrid}>
-          <StatCard 
-            label="Total Applications" 
-            value={analytics.total} 
-            icon="documents-outline" 
-            color="#2563EB" 
-          />
-          <StatCard 
-            label="Approved" 
-            value={analytics.approved} 
-            icon="checkmark-circle-outline" 
-            color="#16A34A" 
-          />
-          <StatCard 
-            label="In Progress" 
-            value={analytics.pending} 
-            icon="time-outline" 
-            color="#F59E0B" 
-          />
-          <StatCard 
-            label="Rejected" 
-            value={analytics.rejected} 
-            icon="close-circle-outline" 
-            color="#DC2626" 
-          />
+        <View style={styles.section}>
+          <View style={styles.sectionHeader}>
+            <AppText style={styles.sectionTitle}>Alerts</AppText>
+            <AppText style={styles.sectionMeta}>AI signal refreshed 5 min ago</AppText>
+          </View>
+          <View style={styles.alertRow}>
+            {alertSummaryCards.map((card) => (
+              <View
+                key={card.title}
+                style={[
+                  styles.alertCard,
+                  {
+                    backgroundColor: `${card.tone}15`,
+                    borderColor: `${card.tone}50`,
+                  },
+                ]}
+              >
+                <AppText style={styles.alertTitle}>{card.title}</AppText>
+                <AppText style={[styles.alertCount, { color: card.tone }]}>{card.count}</AppText>
+                <AppText style={styles.alertCaption}>{card.caption}</AppText>
+              </View>
+            ))}
+          </View>
         </View>
 
-        {/* Beneficiary Management */}
-        <AppText style={styles.sectionTitle}>Management</AppText>
-        <View style={styles.actionGrid}>
-          <ActionCard
-            title="Pending Applications"
-            count={analytics.pending}
-            icon="people-outline"
-            color="#F59E0B"
-            onPress={() => navigation.navigate('Beneficiaries', { filter: 'pending' })}
-          />
-          <ActionCard
-            title="Verification Tasks"
-            count={analytics.pending} // Assuming pending verifications ~ pending apps for now
-            icon="shield-checkmark-outline"
-            color="#7C3AED"
-            actionLabel="Review Now"
-            onPress={() => navigation.navigate('VerificationTasks')}
-          />
-          <ActionCard
-            title="Field Visits"
-            count={2} // Mock
-            icon="calendar-outline"
-            color="#0EA5E9"
-            actionLabel="View Schedule"
-            onPress={() => {}}
-          />
-          <ActionCard
-            title="Reports"
-            count="New"
-            icon="bar-chart-outline"
-            color="#2563EB"
-            actionLabel="View Analytics"
-            onPress={() => navigation.navigate('Reports')}
-          />
+        <View style={styles.section}>
+          <View style={styles.utilisationCard}>
+            <View style={styles.utilisationHeader}>
+              <View>
+                <AppText style={styles.sectionTitle}>Loan Utilisation Overview</AppText>
+                <AppText style={styles.sectionMeta}>Tracking sanctioned vs used</AppText>
+              </View>
+              <View style={styles.utilisationStat}>
+                <AppText style={styles.utilisationValue}>78%</AppText>
+                <AppText
+                  style={[
+                    styles.utilisationChange,
+                    { color: utilisationChange >= 0 ? palette.green : palette.red },
+                  ]}
+                >
+                  {utilisationChange >= 0 ? '+' : ''}
+                  {utilisationChange.toFixed(1)}% vs last month
+                </AppText>
+              </View>
+            </View>
+            <View style={styles.utilisationChart}>
+              {utilisationTrend.map((point) => (
+                <View key={point.label} style={styles.chartColumn}>
+                  <View style={styles.chartTrack}>
+                    <View
+                      style={[
+                        styles.chartFill,
+                        { backgroundColor: palette.green, height: `${point.value}%` },
+                      ]}
+                    />
+                  </View>
+                  <AppText style={styles.chartLabel}>{point.label}</AppText>
+                </View>
+              ))}
+            </View>
+          </View>
         </View>
 
-        <View style={styles.bottomSpacer} />
+        <View style={styles.section}>
+          <View style={styles.sectionHeader}>
+            <AppText style={styles.sectionTitle}>Verification Queue</AppText>
+            <TouchableOpacity onPress={() => navigation.navigate('VerificationTasks')}>
+              <AppText style={styles.sectionAction}>View all</AppText>
+            </TouchableOpacity>
+          </View>
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.queueScroll}
+          >
+            {verificationQueue.map((item) => (
+              <View key={item.name} style={styles.queueCard}>
+                <View style={styles.queueHeader}>
+                  <AppText style={styles.queueName}>{item.name}</AppText>
+                  <View style={styles.queueBadge}>
+                    <AppText style={styles.queueBadgeText}>{item.wait}</AppText>
+                  </View>
+                </View>
+                <AppText style={styles.queueScheme}>{item.scheme}</AppText>
+                <AppText style={styles.queueStatus}>{item.status}</AppText>
+                <TouchableOpacity style={styles.queueAction}>
+                  <AppText style={styles.queueActionText}>Open file</AppText>
+                  <Ionicons name="chevron-forward" size={16} color={palette.navy} />
+                </TouchableOpacity>
+              </View>
+            ))}
+          </ScrollView>
+        </View>
+
+        <View style={styles.section}>
+          <View style={styles.sectionHeader}>
+            <AppText style={styles.sectionTitle}>Quick Actions</AppText>
+            <AppText style={styles.sectionMeta}>4 most used workflows</AppText>
+          </View>
+          <View style={styles.quickActionsGrid}>
+            {quickActionShortcuts.map((action) => (
+              <TouchableOpacity
+                key={action.label}
+                style={styles.quickActionButton}
+                onPress={action.onPress}
+                activeOpacity={0.85}
+              >
+                <View style={[styles.quickIconRing, { backgroundColor: `${action.color}18` }]}>
+                  <Ionicons name={action.icon as any} size={24} color={action.color} />
+                </View>
+                <AppText style={styles.quickActionLabel}>{action.label}</AppText>
+              </TouchableOpacity>
+            ))}
+          </View>
+        </View>
+
+        <View style={styles.section}>
+          <View style={styles.sectionHeader}>
+            <AppText style={styles.sectionTitle}>Today's Tasks</AppText>
+            <AppText style={styles.sectionMeta}>Auto-prioritized by SLA</AppText>
+          </View>
+          <View style={styles.taskList}>
+            {todaysTasks.map((task) => (
+              <View key={task.title} style={styles.taskRow}>
+                <View style={styles.taskTimeBlock}>
+                  <AppText style={styles.taskTime}>{task.time}</AppText>
+                  <AppText style={styles.taskDuration}>{task.duration}</AppText>
+                </View>
+                <View style={styles.taskInfo}>
+                  <AppText style={styles.taskTitle}>{task.title}</AppText>
+                  <View style={styles.taskMetaRow}>
+                    <View style={styles.taskTag}>
+                      <AppText style={styles.taskTagText}>{task.tag}</AppText>
+                    </View>
+                    <AppText style={styles.taskStatus}>{task.status}</AppText>
+                  </View>
+                </View>
+                <TouchableOpacity style={styles.taskCTA}>
+                  <Ionicons name="chevron-forward" size={18} color={palette.navy} />
+                </TouchableOpacity>
+              </View>
+            ))}
+          </View>
+        </View>
+
+        <View style={{ height: 32 }} />
       </ScrollView>
     </View>
   );
 };
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#F5F5F5',
-  },
-  scrollContent: {
-    paddingTop: 100, // Space for header
-    paddingHorizontal: 20,
-    paddingBottom: 40,
-  },
-  profileCard: {
-    backgroundColor: 'white',
-    borderRadius: 16,
-    padding: 20,
-    marginTop: 60, // Overlap with header
-    marginBottom: 24,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 4,
-  },
-  profileHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 16,
-  },
-  avatarContainer: {
-    width: 60,
-    height: 60,
-    borderRadius: 30,
-    backgroundColor: '#008080',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: 16,
-  },
-  profileInfo: {
-    flex: 1,
-  },
-  profileName: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: '#1F2937',
-  },
-  profileDesignation: {
-    fontSize: 14,
-    color: '#6B7280',
-  },
-  profileDetails: {
-    flexDirection: 'row',
-    gap: 16,
-    paddingTop: 16,
-    borderTopWidth: 1,
-    borderTopColor: '#E5E7EB',
-  },
-  detailItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-  },
-  detailText: {
-    fontSize: 13,
-    color: '#4B5563',
-  },
-  sectionTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#1F2937',
-    marginBottom: 16,
-    marginTop: 8,
-  },
-  statsGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 12,
-    marginBottom: 24,
-  },
-  statCard: {
-    width: '48%',
-    backgroundColor: 'white',
-    borderRadius: 12,
-    padding: 16,
-    borderLeftWidth: 4,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 4,
-    elevation: 2,
-  },
-  iconContainer: {
-    padding: 8,
-    borderRadius: 8,
-  },
-  statValue: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#1F2937',
-  },
-  statLabel: {
-    fontSize: 12,
-    color: '#6B7280',
-  },
-  actionGrid: {
-    gap: 16,
-  },
-  actionCard: {
-    backgroundColor: 'white',
-    borderRadius: 16,
-    padding: 16,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 4,
-    elevation: 2,
-  },
-  actionHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    marginBottom: 12,
-  },
-  actionIcon: {
-    padding: 10,
-    borderRadius: 12,
-  },
-  badge: {
-    backgroundColor: '#EF4444',
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-    borderRadius: 12,
-  },
-  badgeText: {
-    color: 'white',
-    fontSize: 12,
-    fontWeight: 'bold',
-  },
-  actionTitle: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#1F2937',
-    marginBottom: 12,
-  },
-  actionFooter: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    borderTopWidth: 1,
-    borderTopColor: '#F3F4F6',
-    paddingTop: 12,
-  },
-  actionLink: {
-    fontSize: 14,
-    fontWeight: '500',
-  },
-  bottomSpacer: {
-    height: 40,
-  },
-});
+const createDashboardStyles = (palette: DashboardPalette) =>
+  StyleSheet.create({
+    container: {
+      flex: 1,
+      backgroundColor: palette.background,
+    },
+    scrollContent: {
+      paddingTop: 110,
+      paddingHorizontal: 20,
+      paddingBottom: 24,
+      gap: 20,
+    },
+    profileStrip: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      borderRadius: 18,
+      paddingVertical: 16,
+      paddingHorizontal: 20,
+      borderWidth: 1,
+      borderColor: palette.borderSoft,
+      backgroundColor: palette.surface,
+      shadowColor: palette.navy,
+      shadowOpacity: 0.06,
+      shadowRadius: 12,
+      shadowOffset: { width: 0, height: 4 },
+      elevation: 3,
+    },
+    profileIdentity: {
+      flex: 1,
+    },
+    profileName: {
+      fontSize: 18,
+      fontWeight: '700',
+      color: palette.navy,
+    },
+    profileMeta: {
+      fontSize: 13,
+      color: palette.slate,
+      marginTop: 4,
+    },
+    profileBadges: {
+      alignItems: 'flex-end',
+      gap: 6,
+    },
+    profileBadge: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 6,
+      paddingVertical: 4,
+      paddingHorizontal: 12,
+      borderRadius: 999,
+      backgroundColor: palette.accentSoft,
+    },
+    profileBadgeText: {
+      fontSize: 12,
+      color: palette.green,
+      fontWeight: '600',
+    },
+    profileId: {
+      fontSize: 12,
+      color: palette.slate,
+      letterSpacing: 0.3,
+    },
+    section: {
+      gap: 12,
+    },
+    sectionHeader: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+    },
+    sectionTitle: {
+      fontSize: 16,
+      fontWeight: '700',
+      color: palette.navy,
+    },
+    sectionMeta: {
+      fontSize: 12,
+      color: palette.slate,
+    },
+    sectionAction: {
+      fontSize: 13,
+      color: palette.blue,
+      fontWeight: '600',
+    },
+    alertRow: {
+      flexDirection: 'row',
+      gap: 12,
+      flexWrap: 'wrap',
+    },
+    alertCard: {
+      flex: 1,
+      minWidth: 120,
+      borderRadius: 16,
+      padding: 16,
+      borderWidth: 1,
+    },
+    alertTitle: {
+      fontSize: 13,
+      color: palette.slate,
+      fontWeight: '600',
+    },
+    alertCount: {
+      fontSize: 28,
+      fontWeight: '700',
+      marginVertical: 6,
+    },
+    alertCaption: {
+      fontSize: 12,
+      color: palette.navy,
+    },
+    utilisationCard: {
+      borderRadius: 20,
+      padding: 18,
+      borderWidth: 1,
+      borderColor: palette.borderSoft,
+      gap: 18,
+      backgroundColor: palette.surface,
+    },
+    utilisationHeader: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+    },
+    utilisationStat: {
+      alignItems: 'flex-end',
+    },
+    utilisationValue: {
+      fontSize: 32,
+      fontWeight: '700',
+      color: palette.navy,
+    },
+    utilisationChange: {
+      fontSize: 12,
+      marginTop: 2,
+      fontWeight: '600',
+    },
+    utilisationChart: {
+      flexDirection: 'row',
+      alignItems: 'flex-end',
+      justifyContent: 'space-between',
+      gap: 12,
+    },
+    chartColumn: {
+      alignItems: 'center',
+      flex: 1,
+      gap: 8,
+    },
+    chartTrack: {
+      width: '100%',
+      height: 120,
+      borderRadius: 12,
+      backgroundColor: palette.chartTrack,
+      justifyContent: 'flex-end',
+      overflow: 'hidden',
+    },
+    chartFill: {
+      width: '100%',
+      borderRadius: 12,
+    },
+    chartLabel: {
+      fontSize: 11,
+      color: palette.slate,
+    },
+    queueScroll: {
+      gap: 12,
+    },
+    queueCard: {
+      width: 240,
+      borderRadius: 18,
+      padding: 18,
+      borderWidth: 1,
+      borderColor: palette.borderSoft,
+      marginRight: 12,
+      gap: 8,
+      backgroundColor: palette.surface,
+    },
+    queueHeader: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+    },
+    queueName: {
+      fontSize: 15,
+      fontWeight: '600',
+      color: palette.navy,
+    },
+    queueBadge: {
+      paddingHorizontal: 10,
+      paddingVertical: 2,
+      borderRadius: 8,
+      backgroundColor: palette.queueBadgeBg,
+    },
+    queueBadgeText: {
+      fontSize: 11,
+      color: palette.gold,
+      fontWeight: '600',
+    },
+    queueScheme: {
+      fontSize: 12,
+      color: palette.slate,
+    },
+    queueStatus: {
+      fontSize: 13,
+      color: palette.navy,
+      fontWeight: '500',
+    },
+    queueAction: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      marginTop: 6,
+    },
+    queueActionText: {
+      fontSize: 13,
+      color: palette.navy,
+      fontWeight: '600',
+    },
+    quickActionsGrid: {
+      flexDirection: 'row',
+      flexWrap: 'wrap',
+      gap: 12,
+    },
+    quickActionButton: {
+      width: '30%',
+      borderRadius: 18,
+      paddingVertical: 18,
+      alignItems: 'center',
+      justifyContent: 'center',
+      borderWidth: 1,
+      borderColor: palette.quickBorder,
+      gap: 12,
+      backgroundColor: palette.surface,
+      shadowColor: palette.navy,
+      shadowOpacity: 0.04,
+      shadowRadius: 10,
+      shadowOffset: { width: 0, height: 4 },
+      elevation: 2,
+    },
+    quickIconRing: {
+      width: 54,
+      height: 54,
+      borderRadius: 27,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    quickActionLabel: {
+      fontSize: 13,
+      color: palette.navy,
+      textAlign: 'center',
+      fontWeight: '600',
+    },
+    taskList: {
+      borderRadius: 20,
+      borderWidth: 1,
+      borderColor: palette.borderSoft,
+      backgroundColor: palette.surface,
+    },
+    taskRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      paddingHorizontal: 16,
+      paddingVertical: 14,
+      gap: 12,
+      borderBottomWidth: StyleSheet.hairlineWidth,
+      borderBottomColor: palette.borderSoft,
+    },
+    taskTimeBlock: {
+      alignItems: 'flex-start',
+      width: 68,
+    },
+    taskTime: {
+      fontSize: 15,
+      fontWeight: '700',
+      color: palette.navy,
+    },
+    taskDuration: {
+      fontSize: 12,
+      color: palette.slate,
+    },
+    taskInfo: {
+      flex: 1,
+      gap: 4,
+    },
+    taskTitle: {
+      fontSize: 14,
+      fontWeight: '600',
+      color: palette.navy,
+    },
+    taskMetaRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 10,
+    },
+    taskTag: {
+      paddingHorizontal: 8,
+      paddingVertical: 2,
+      borderRadius: 999,
+      backgroundColor: palette.taskTagBg,
+    },
+    taskTagText: {
+      fontSize: 11,
+      color: palette.gold,
+      fontWeight: '600',
+    },
+    taskStatus: {
+      fontSize: 12,
+      color: palette.slate,
+    },
+    taskCTA: {
+      width: 28,
+      alignItems: 'flex-end',
+    },
+  });
+
+type DashboardPalette = {
+  background: string;
+  surface: string;
+  navy: string;
+  slate: string;
+  gold: string;
+  blue: string;
+  red: string;
+  green: string;
+  accentSoft: string;
+  borderSoft: string;
+  queueBadgeBg: string;
+  taskTagBg: string;
+  chartTrack: string;
+  quickBorder: string;
+};
+
+const buildDashboardPalette = (theme: AppTheme): DashboardPalette => {
+  const accent = theme.colors.gradientStart ?? '#0F8F88';
+  const accentSecondary = theme.colors.gradientEnd ?? '#20B2AA';
+  return {
+    background: '#E8F3F2',
+    surface: theme.colors.surface,
+    navy: '#0B2A3F',
+    slate: '#4E5F6D',
+    gold: '#C7951E',
+    blue: '#1F6FAE',
+    red: theme.colors.error,
+    green: accent,
+    accentSoft: `${accentSecondary}26`,
+    borderSoft: `${theme.colors.border}99`,
+    queueBadgeBg: '#FFF2E3',
+    taskTagBg: '#F6EFE1',
+    chartTrack: `${accent}1A`,
+    quickBorder: `${accent}30`,
+  };
+};

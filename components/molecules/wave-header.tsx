@@ -11,13 +11,15 @@ const { width } = Dimensions.get('window');
 
 interface WaveHeaderProps {
   title: string;
+  subtitle?: string;
+  height?: number;
   onBack?: () => void;
   rightAction?: React.ReactNode;
 }
 
-export const WaveHeader = ({ title, onBack, rightAction }: WaveHeaderProps) => {
+export const WaveHeader = ({ title, subtitle, height, onBack, rightAction }: WaveHeaderProps) => {
   return (
-    <View style={styles.headerContainer}>
+    <View style={[styles.headerContainer, height ? { height } : null]}>
       <LinearGradient
         colors={['#008080', '#20B2AA']} // Teal gradient
         style={styles.gradientHeader}
@@ -40,9 +42,12 @@ export const WaveHeader = ({ title, onBack, rightAction }: WaveHeaderProps) => {
           ) : (
             <View style={styles.placeholderIcon} />
           )}
-          
-          <AppText style={styles.headerTitle}>{title}</AppText>
-          
+
+          <View style={styles.titleStack}>
+            <AppText style={styles.headerTitle}>{title}</AppText>
+            {subtitle ? <AppText style={styles.headerSubtitle}>{subtitle}</AppText> : null}
+          </View>
+
           <View style={styles.rightAction}>
             {rightAction || <View style={styles.placeholderIcon} />}
           </View>
@@ -94,7 +99,16 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: 'white',
     textAlign: 'center',
+  },
+  headerSubtitle: {
+    fontSize: 14,
+    color: 'rgba(255,255,255,0.9)',
+    marginTop: 4,
+    textAlign: 'center',
+  },
+  titleStack: {
     flex: 1,
+    alignItems: 'center',
   },
   iconButton: {
     padding: 8,

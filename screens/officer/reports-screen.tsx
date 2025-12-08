@@ -1,13 +1,17 @@
+import { useState } from 'react';
+
 import { AppButton } from '@/components/atoms/app-button';
+import type { IconName } from '@/components/atoms/app-icon';
 import { AppIcon } from '@/components/atoms/app-icon';
 import { AppText } from '@/components/atoms/app-text';
 import { WaveHeader } from '@/components/molecules/wave-header';
+import type { ColorToken } from '@/constants/theme';
 import { useAppTheme } from '@/hooks/use-app-theme';
-import { ScrollView, StyleSheet, View, useWindowDimensions } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, View, useWindowDimensions } from 'react-native';
 import Svg, { Circle, Defs, Stop, LinearGradient as SvgLinearGradient } from 'react-native-svg';
 
-const GAUGE_SIZE = 210;
-const GAUGE_STROKE = 22;
+const GAUGE_SIZE = 160;
+const GAUGE_STROKE = 18;
 const GAUGE_RADIUS = (GAUGE_SIZE - GAUGE_STROKE) / 2;
 const GAUGE_CIRCUMFERENCE = 2 * Math.PI * GAUGE_RADIUS;
 const GAUGE_SWEEP_DEG = 180;
@@ -15,6 +19,157 @@ const GAUGE_SWEEP_RATIO = GAUGE_SWEEP_DEG / 360;
 
 export const ReportsScreen = () => {
   const theme = useAppTheme();
+  const [activeTab, setActiveTab] = useState<ReportsTab>('risk');
+  const [duration, setDuration] = useState<DurationKey>('6m');
+  const [isDurationMenuOpen, setDurationMenuOpen] = useState(false);
+  const [activeTooltip, setActiveTooltip] = useState<{ label: string; value: number; index: number } | null>(null);
+  const selectedSeries = performanceSeries[duration];
+  const maxPerformanceValue = Math.max(...selectedSeries.map((point) => point.value), 1);
+  const tooltipLeftPercent = activeTooltip
+    ? ((activeTooltip.index + 0.5) / selectedSeries.length) * 100
+    : 0;
+
+  const handleDurationSelect = (value: DurationKey) => {
+    setDuration(value);
+    setDurationMenuOpen(false);
+    setActiveTooltip(null);
+  };
+
+  const handleShowTooltip = (point: { label: string; value: number }, index: number) =>
+    setActiveTooltip({ label: point.label, value: point.value, index });
+
+  const handleHideTooltip = () => setActiveTooltip(null);
+
+  const handleTabChange = (tab: ReportsTab) => {
+    setActiveTab(tab);
+    setDurationMenuOpen(false);
+    setActiveTooltip(null);
+  };
+
+  const getTabPalette = (isActive: boolean) => {
+    const accent = theme.colors.gradientStart ?? theme.colors.primary;
+    if (isActive) {
+      return {
+        background: accent,
+        border: accent,
+        label: theme.colors.onPrimary,
+        shadowOpacity: 0,
+      };
+    }
+    return {
+      background: theme.colors.surface,
+      border: `${theme.colors.border}aa`,
+      label: theme.colors.text,
+      shadowOpacity: 0,
+    };
+  };
+
+  const renderTabContent = () => {
+    switch (activeTab) {
+      case 'risk':
+        return <RiskScoringCard />;
+      case 'documents':
+        return <DocumentAlertsPanel />;
+      case 'performance':
+        return (
+          <View style={[styles.card, styles.performanceCard, { backgroundColor: theme.colors.surface }]}>
+            <View style={styles.performanceHeader}>
+              <View>
+                <AppText variant="titleMedium" color="text" weight="600">
+                  Monthly Performance Trend
+                </AppText>
+                <AppText variant="bodySmall" color="muted">
+                  Showing approvals vs submissions
+                </AppText>
+              </View>
+              <View style={styles.dropdownWrapper}>
+                <Pressable
+                  onPress={() => setDurationMenuOpen((prev) => !prev)}
+                  style={[styles.dropdownButton, { borderColor: theme.colors.border }]}
+                >
+                  <AppText variant="labelMedium" color="text" weight="600">
+                    {durationOptions.find((option) => option.value === duration)?.label ?? ''}
+                  </AppText>
+                  <AppIcon name={isDurationMenuOpen ? 'chevron-up' : 'chevron-down'} size={18} color={theme.colors.icon} />
+                </Pressable>
+                {isDurationMenuOpen ? (
+                  <View style={[styles.dropdownMenu, { backgroundColor: theme.colors.surface, borderColor: theme.colors.border }]}> 
+                    {durationOptions.map((option) => (
+                      <Pressable
+                        key={option.value}
+                        style={styles.dropdownOption}
+                        onPress={() => handleDurationSelect(option.value)}
+                      >
+                        <AppText
+                          variant="bodyMedium"
+                          color={option.value === duration ? 'primary' : 'text'}
+                          weight={option.value === duration ? '600' : '400'}
+                        >
+                          {option.label}
+                        </AppText>
+                      </Pressable>
+                    ))}
+                  </View>
+                ) : null}
+              </View>
+            </View>
+
+            <View style={styles.chartWrapper}>
+              {activeTooltip ? (
+                <View
+                  style={[
+                    styles.chartTooltip,
+                    {
+                      left: `${tooltipLeftPercent}%`,
+                      backgroundColor: theme.colors.surface,
+                      borderColor: `${theme.colors.border}80`,
+                    },
+                  ]}
+                >
+                  <AppText variant="labelSmall" color="muted">
+                    {activeTooltip.label}
+                  </AppText>
+                  <AppText variant="titleMedium" color="text" weight="600">
+                    {activeTooltip.value} cases
+                  </AppText>
+                </View>
+              ) : null}
+              <View style={styles.chartBars}>
+                {selectedSeries.map((point, index) => (
+                  <Pressable
+                    key={`${point.label}-${index}`}
+                    style={styles.chartBarPressable}
+                    onHoverIn={() => handleShowTooltip(point, index)}
+                    onHoverOut={handleHideTooltip}
+                    onPressIn={() => handleShowTooltip(point, index)}
+                    onPressOut={handleHideTooltip}
+                  >
+                    <View style={[styles.barTrack, { backgroundColor: `${theme.colors.primary}18` }]}>
+                      <View
+                        style={[
+                          styles.barFill,
+                          {
+                            height: `${Math.max((point.value / maxPerformanceValue) * 100, 8)}%`,
+                            backgroundColor: theme.colors.primary,
+                          },
+                        ]}
+                      />
+                    </View>
+                    <AppText variant="labelSmall" color="muted">
+                      {point.label}
+                    </AppText>
+                  </Pressable>
+                ))}
+              </View>
+            </View>
+          </View>
+        );
+      case 'activity':
+        return <ActivityLogCard />;
+      default:
+        return null;
+    }
+  };
 
   return (
     <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
@@ -25,90 +180,43 @@ export const ReportsScreen = () => {
       />
 
       <ScrollView contentContainerStyle={styles.content}>
-        <View style={styles.summaryRow}>
-          <SummaryCard label="Total Applications" value="124" icon="file-document-outline" color="#4F46E5" />
-          <SummaryCard label="Approved" value="86" icon="check-circle-outline" color="#10B981" />
-        </View>
-        <View style={styles.summaryRow}>
-          <SummaryCard label="Pending" value="32" icon="clock-outline" color="#F59E0B" />
-          <SummaryCard label="Rejected" value="6" icon="close-circle-outline" color="#EF4444" />
+        <SummaryStrip />
+
+        <QuickActionPanel />
+
+        <View style={[styles.tabBar, { backgroundColor: theme.colors.surfaceVariant }]}> 
+          {reportsTabs.map((tab) => {
+            const isActive = tab.key === activeTab;
+            const palette = getTabPalette(isActive);
+            return (
+              <Pressable
+                key={tab.key}
+                style={[
+                  styles.tabItem,
+                  {
+                    backgroundColor: palette.background,
+                    borderColor: palette.border,
+                  },
+                ]}
+                onPress={() => handleTabChange(tab.key)}
+              >
+                <View style={styles.tabContentRow}>
+                  <AppIcon name={tab.icon} size={16} color={palette.label} />
+                  <AppText
+                    variant="labelMedium"
+                    color={palette.label}
+                    weight={isActive ? '600' : '500'}
+                  >
+                    {tab.label}
+                  </AppText>
+                </View>
+              </Pressable>
+            );
+          })}
         </View>
 
-        <RiskScoringCard />
-
-        <View style={[styles.card, { backgroundColor: theme.colors.surface }]}>
-          <View style={styles.cardHeader}>
-            <AppText variant="titleMedium" color="text" weight="600">
-              Monthly Performance
-            </AppText>
-            <AppButton label="Export" variant="ghost" size="small" icon="download" />
-          </View>
-          
-          <View style={styles.chartPlaceholder}>
-            <View style={[styles.bar, { height: '60%', backgroundColor: theme.colors.primary }]} />
-            <View style={[styles.bar, { height: '80%', backgroundColor: theme.colors.primary }]} />
-            <View style={[styles.bar, { height: '40%', backgroundColor: theme.colors.primary }]} />
-            <View style={[styles.bar, { height: '90%', backgroundColor: theme.colors.primary }]} />
-            <View style={[styles.bar, { height: '70%', backgroundColor: theme.colors.primary }]} />
-            <View style={[styles.bar, { height: '50%', backgroundColor: theme.colors.primary }]} />
-          </View>
-          <View style={styles.chartLabels}>
-            <AppText variant="labelSmall" color="muted">May</AppText>
-            <AppText variant="labelSmall" color="muted">Jun</AppText>
-            <AppText variant="labelSmall" color="muted">Jul</AppText>
-            <AppText variant="labelSmall" color="muted">Aug</AppText>
-            <AppText variant="labelSmall" color="muted">Sep</AppText>
-            <AppText variant="labelSmall" color="muted">Oct</AppText>
-          </View>
-        </View>
-
-        <View style={[styles.card, { backgroundColor: theme.colors.surface }]}>
-          <AppText variant="titleMedium" color="text" weight="600" style={{ marginBottom: 16 }}>
-            Recent Activity
-          </AppText>
-          
-          <ActivityItem 
-            title="Verification Completed" 
-            subtitle="Rahul Kumar - PMEGP" 
-            time="2 hours ago" 
-            icon="check-circle"
-            color="success"
-          />
-          <ActivityItem 
-            title="New Application" 
-            subtitle="Sita Devi - Mudra" 
-            time="5 hours ago" 
-            icon="file-plus"
-            color="primary"
-          />
-          <ActivityItem 
-            title="Document Rejected" 
-            subtitle="Amit Singh - Missing Invoice" 
-            time="1 day ago" 
-            icon="alert-circle"
-            color="error"
-          />
-        </View>
+        {renderTabContent()}
       </ScrollView>
-    </View>
-  );
-};
-
-const SummaryCard = ({ label, value, icon, color }: { label: string; value: string; icon: string; color: string }) => {
-  const theme = useAppTheme();
-  return (
-    <View style={[styles.summaryCard, { backgroundColor: theme.colors.surface }]}>
-      <View style={[styles.iconBox, { backgroundColor: `${color}20` }]}>
-        <AppIcon name={icon as any} size={24} color={color as any} />
-      </View>
-      <View>
-        <AppText variant="headlineSmall" color="text" weight="700">
-          {value}
-        </AppText>
-        <AppText variant="labelSmall" color="muted">
-          {label}
-        </AppText>
-      </View>
     </View>
   );
 };
@@ -131,6 +239,265 @@ const ActivityItem = ({ title, subtitle, time, icon, color }: { title: string; s
       <AppText variant="labelSmall" color="muted">
         {time}
       </AppText>
+    </View>
+  );
+};
+
+const summaryMetrics = [
+  { label: 'Total', value: '124', tone: '#4F46E5' },
+  { label: 'Approved', value: '86', tone: '#10B981' },
+  { label: 'Pending', value: '32', tone: '#F59E0B' },
+  { label: 'Rejected', value: '6', tone: '#EF4444' },
+];
+
+const quickActions: Array<{ label: string; icon: IconName; tone: ColorToken; helper: string }> = [
+  {
+    label: 'Approve',
+    icon: 'check-circle',
+    tone: 'success',
+    helper: 'Confirm when AI risk is low and KYC + site proofs align.',
+  },
+  {
+    label: 'Ask Re-Upload',
+    icon: 'cloud-upload',
+    tone: 'warning',
+    helper: 'Request if a document is blurry, expired, or mismatched.',
+  },
+  {
+    label: 'Raise Field Inspection',
+    icon: 'map-marker-alert',
+    tone: 'error',
+    helper: 'Escalate when anomalies persist or address needs validation.',
+  },
+];
+
+const quickActionSummary = {
+  label: 'System analysis',
+  highlight: 'Low risk detected - documents valid',
+  detail: 'AI + registry checks refreshed 2 mins ago',
+};
+
+type ReportsTab = 'risk' | 'documents' | 'performance' | 'activity';
+
+const reportsTabs: Array<{ key: ReportsTab; label: string; icon: IconName }> = [
+  { key: 'risk', label: 'Risk', icon: 'alert-circle-outline' },
+  { key: 'documents', label: 'Docs', icon: 'file-document-outline' },
+  { key: 'performance', label: 'Perf', icon: 'chart-box-outline' },
+  { key: 'activity', label: 'Logs', icon: 'bell-outline' },
+];
+
+type DurationKey = '3m' | '6m' | '12m';
+
+const durationOptions: Array<{ label: string; value: DurationKey }> = [
+  { label: 'Last 3 months', value: '3m' },
+  { label: 'Last 6 months', value: '6m' },
+  { label: 'Last 12 months', value: '12m' },
+];
+
+const performanceSeries: Record<DurationKey, Array<{ label: string; value: number }>> = {
+  '3m': [
+    { label: 'Aug', value: 68 },
+    { label: 'Sep', value: 74 },
+    { label: 'Oct', value: 82 },
+  ],
+  '6m': [
+    { label: 'May', value: 60 },
+    { label: 'Jun', value: 78 },
+    { label: 'Jul', value: 55 },
+    { label: 'Aug', value: 92 },
+    { label: 'Sep', value: 71 },
+    { label: 'Oct', value: 66 },
+  ],
+  '12m': [
+    { label: 'Jan', value: 48 },
+    { label: 'Feb', value: 52 },
+    { label: 'Mar', value: 57 },
+    { label: 'Apr', value: 63 },
+    { label: 'May', value: 60 },
+    { label: 'Jun', value: 78 },
+    { label: 'Jul', value: 55 },
+    { label: 'Aug', value: 92 },
+    { label: 'Sep', value: 71 },
+    { label: 'Oct', value: 66 },
+    { label: 'Nov', value: 73 },
+    { label: 'Dec', value: 69 },
+  ],
+};
+
+const SummaryStrip = () => {
+  const theme = useAppTheme();
+  return (
+    <View style={[styles.summaryStrip, { backgroundColor: theme.colors.surface }]}>
+      {summaryMetrics.map((metric, index) => (
+        <View
+          key={metric.label}
+          style={[
+            styles.summaryCell,
+            index < summaryMetrics.length - 1 && {
+              borderRightWidth: StyleSheet.hairlineWidth,
+              borderRightColor: `${theme.colors.border}60`,
+            },
+          ]}
+        >
+          <AppText variant="labelSmall" color="muted">
+            {metric.label}
+          </AppText>
+          <AppText variant="headlineMedium" weight="700" style={{ color: metric.tone }}>
+            {metric.value}
+          </AppText>
+        </View>
+      ))}
+    </View>
+  );
+};
+
+const QuickActionPanel = () => {
+  const theme = useAppTheme();
+  return (
+    <View style={[styles.card, styles.quickActionsCard, { backgroundColor: theme.colors.surface }]}> 
+      <View style={styles.quickActionHeader}>
+        <View>
+          <AppText variant="titleSmall" color="text" weight="600">
+            Decision Guidance
+          </AppText>
+          <AppText variant="bodySmall" color="muted">
+            Choose the right next step for this file
+          </AppText>
+        </View>
+        <AppIcon name="shield-check" size={20} color={theme.colors.success} />
+      </View>
+
+      <View
+        style={[
+          styles.quickSummaryContainer,
+          {
+            backgroundColor: theme.colors.surfaceVariant,
+            borderColor: `${theme.colors.border}80`,
+          },
+        ]}
+      >
+        <View style={styles.quickSummaryBadge}>
+          <AppIcon name="robot" size={14} color={theme.colors.info} />
+          <AppText variant="labelSmall" color="muted" weight="600">
+            {quickActionSummary.label}
+          </AppText>
+        </View>
+        <AppText variant="bodyMedium" color="text" weight="600">
+          {quickActionSummary.highlight}
+        </AppText>
+        <AppText variant="bodySmall" color="muted">
+          {quickActionSummary.detail}
+        </AppText>
+      </View>
+
+      <View style={styles.quickActionList}>
+        {quickActions.map((action) => (
+          <View
+            key={action.label}
+            style={[
+              styles.quickActionItem,
+              {
+                borderColor: `${theme.colors.border}80`,
+                backgroundColor: theme.colors.surface,
+              },
+            ]}
+          >
+            <AppButton
+              label={action.label}
+              icon={action.icon}
+              compact
+              tone={action.tone}
+              variant="outline"
+              style={styles.quickActionButton}
+            />
+            <AppText variant="bodySmall" color="muted">
+              {action.helper}
+            </AppText>
+          </View>
+        ))}
+      </View>
+    </View>
+  );
+};
+
+const DocumentAlertsPanel = () => {
+  const theme = useAppTheme();
+  const resolveTone = (tone: Tone) => {
+    switch (tone) {
+      case 'warning':
+        return { fill: theme.colors.warning, track: `${theme.colors.warning}33` };
+      case 'error':
+        return { fill: theme.colors.error, track: `${theme.colors.error}33` };
+      case 'info':
+        return { fill: theme.colors.info, track: `${theme.colors.info}33` };
+      default:
+        return { fill: theme.colors.primary, track: `${theme.colors.primary}33` };
+    }
+  };
+
+  return (
+    <View style={[styles.card, { backgroundColor: theme.colors.surface }]}> 
+      <AppText variant="titleMedium" color="text" weight="600" style={{ marginBottom: 12 }}>
+        Document Alerts
+      </AppText>
+      {documentAlerts.map((doc) => (
+        <View
+          key={doc.title}
+          style={[styles.docCard, { borderColor: `${theme.colors.border}80`, backgroundColor: theme.colors.surface }]}
+        >
+          <View style={styles.docHeader}>
+            <AppIcon name="file-document" size={20} color={theme.colors.primary} />
+            <View style={{ flex: 1 }}>
+              <AppText variant="bodyMedium" color="text" weight="600">
+                {doc.title}
+              </AppText>
+              <AppText variant="bodySmall" color="muted">
+                {doc.entity}
+              </AppText>
+            </View>
+            <AppText variant="labelSmall" color="muted">
+              {doc.modified}
+            </AppText>
+          </View>
+          <View style={styles.badgeRow}>
+            {doc.badges.map((badge) => {
+              const palette = resolveTone(badge.tone as Tone);
+              return (
+                <View
+                  key={badge.label}
+                  style={[styles.badge, { backgroundColor: palette.track }]}
+                >
+                  <AppIcon name="alert-circle" size={14} color={palette.fill} />
+                  <AppText variant="labelSmall" style={{ color: palette.fill, fontWeight: '600' }}>
+                    {badge.label}
+                  </AppText>
+                </View>
+              );
+            })}
+          </View>
+        </View>
+      ))}
+    </View>
+  );
+};
+
+const ActivityLogCard = () => {
+  const theme = useAppTheme();
+  return (
+    <View style={[styles.card, { backgroundColor: theme.colors.surface }]}> 
+      <AppText variant="titleMedium" color="text" weight="600" style={{ marginBottom: 16 }}>
+        Activity Log
+      </AppText>
+      {activityLogEntries.map((entry) => (
+        <ActivityItem
+          key={`${entry.title}-${entry.time}`}
+          title={entry.title}
+          subtitle={entry.subtitle}
+          time={entry.time}
+          icon={entry.icon}
+          color={entry.color}
+        />
+      ))}
     </View>
   );
 };
@@ -161,12 +528,42 @@ const documentAlerts: Array<{
   },
 ];
 
-const riskBreakdown: Array<{ label: string; value: number; tone: Tone }> = [
-  { label: 'Font Inconsistency', value: 92, tone: 'error' },
-  { label: 'Metadata Mismatch', value: 75, tone: 'info' },
-  { label: 'Layer Manipulation', value: 81, tone: 'warning' },
-  { label: 'Cross-Document Mismatch', value: 66, tone: 'primary' },
-  { label: 'Image Tampering', value: 78, tone: 'error' },
+const fraudSignals: Array<{ label: string; severity: 'High' | 'Medium' }> = [
+  { label: 'Font inconsistency', severity: 'High' },
+  { label: 'Metadata mismatch', severity: 'Medium' },
+  { label: 'Layer manipulation', severity: 'High' },
+  { label: 'Location mismatch', severity: 'High' },
+  { label: 'Repeat device used', severity: 'Medium' },
+];
+
+const suggestedActions = [
+  { label: 'Ask for re-upload', icon: 'cloud-upload' },
+  { label: 'Send site inspection request', icon: 'map-marker-check' },
+  { label: 'Approve with warning', icon: 'shield-alert' },
+];
+
+const activityLogEntries = [
+  {
+    title: 'Verification Completed',
+    subtitle: 'Rahul Kumar - PMEGP',
+    time: '2 hours ago',
+    icon: 'check-circle',
+    color: 'success',
+  },
+  {
+    title: 'New Application',
+    subtitle: 'Sita Devi - Mudra',
+    time: '5 hours ago',
+    icon: 'file-plus',
+    color: 'primary',
+  },
+  {
+    title: 'Document Rejected',
+    subtitle: 'Amit Singh - Missing Invoice',
+    time: '1 day ago',
+    icon: 'alert-circle',
+    color: 'error',
+  },
 ];
 
 const RiskScoringCard = () => {
@@ -174,24 +571,13 @@ const RiskScoringCard = () => {
   const { width } = useWindowDimensions();
   const isWide = width > 900;
   const score = 82;
-  const minAngle = -180;
-  const maxAngle = 0;
-  const scoreAngle = minAngle + (score / 100) * (maxAngle - minAngle);
   const sweepLength = GAUGE_CIRCUMFERENCE * GAUGE_SWEEP_RATIO;
   const progressLength = sweepLength * (score / 100);
   const gradientId = 'riskGaugeGradient';
-  const resolveTone = (tone: Tone) => {
-    switch (tone) {
-      case 'warning':
-        return { fill: theme.colors.warning, track: `${theme.colors.warning}33` };
-      case 'error':
-        return { fill: theme.colors.error, track: `${theme.colors.error}33` };
-      case 'info':
-        return { fill: theme.colors.info, track: `${theme.colors.info}33` };
-      default:
-        return { fill: theme.colors.primary, track: `${theme.colors.primary}33` };
-    }
-  };
+  const getSeverityPalette = (severity: 'High' | 'Medium') =>
+    severity === 'High'
+      ? { text: theme.colors.error, background: `${theme.colors.error}26` }
+      : { text: theme.colors.warning, background: `${theme.colors.warning}26` };
 
   return (
     <View style={[styles.card, styles.riskCard, { backgroundColor: theme.colors.surface }]}>
@@ -204,141 +590,124 @@ const RiskScoringCard = () => {
             Highlights suspicious signals across uploaded proofs
           </AppText>
         </View>
-        <AppButton label="View All Flags" size="small" variant="ghost" icon="shield-alert" />
+        <AppButton label="View All Flags" compact variant="ghost" icon="shield-alert" />
       </View>
 
       <View style={[styles.riskGrid, isWide ? styles.riskGridWide : styles.riskGridStack]}>
-        <View style={[styles.riskColumn, { backgroundColor: theme.colors.infoContainer }]}>
-          <AppText variant="labelMedium" color="muted" style={{ marginBottom: 8 }}>
-            Uploaded Documents
-          </AppText>
-          {documentAlerts.map((doc) => (
-            <View
-              key={doc.title}
-              style={[styles.docCard, { borderColor: `${theme.colors.border}80`, backgroundColor: theme.colors.surface }]}
-            >
-              <View style={styles.docHeader}>
-                <AppIcon name="file-document" size={20} color={theme.colors.primary} />
-                <View style={{ flex: 1 }}>
-                  <AppText variant="bodyMedium" color="text" weight="600">
-                    {doc.title}
-                  </AppText>
-                  <AppText variant="bodySmall" color="muted">
-                    {doc.entity}
+        <View style={[styles.riskColumn, styles.scorePanel, { backgroundColor: theme.colors.primaryContainer }]}> 
+          <View style={styles.scoreHeaderRow}>
+            <AppText variant="labelMedium" color="muted">
+              Risk Score
+            </AppText>
+            <AppText variant="labelSmall" color="muted">
+              Updated moments ago
+            </AppText>
+          </View>
+          <View style={[styles.scoreSummaryRow, !isWide && styles.scoreSummaryStack]}>
+            <View style={styles.gaugeWrapper}>
+              <View style={styles.gaugeSvgWrapper}>
+                <Svg width={GAUGE_SIZE} height={GAUGE_SIZE}>
+                  <Defs>
+                    <SvgLinearGradient id={gradientId} x1="0%" y1="50%" x2="100%" y2="50%" gradientUnits="userSpaceOnUse">
+                      <Stop offset="0%" stopColor="#DC2626" />
+                      <Stop offset="45%" stopColor="#F97316" />
+                      <Stop offset="100%" stopColor="#16A34A" />
+                    </SvgLinearGradient>
+                  </Defs>
+                  <Circle
+                    cx={GAUGE_SIZE / 2}
+                    cy={GAUGE_SIZE / 2}
+                    r={GAUGE_RADIUS}
+                    stroke={`url(#${gradientId})`}
+                    strokeOpacity={0.25}
+                    strokeWidth={GAUGE_STROKE}
+                    fill="none"
+                    strokeLinecap="round"
+                    strokeDasharray={`${sweepLength} ${GAUGE_CIRCUMFERENCE}`}
+                    transform={`rotate(-180 ${GAUGE_SIZE / 2} ${GAUGE_SIZE / 2})`}
+                  />
+                  <Circle
+                    cx={GAUGE_SIZE / 2}
+                    cy={GAUGE_SIZE / 2}
+                    r={GAUGE_RADIUS}
+                    stroke={`url(#${gradientId})`}
+                    strokeWidth={GAUGE_STROKE}
+                    fill="none"
+                    strokeLinecap="round"
+                    strokeDasharray={`${sweepLength} ${GAUGE_CIRCUMFERENCE}`}
+                    strokeDashoffset={`${sweepLength - progressLength}`}
+                    transform={`rotate(-180 ${GAUGE_SIZE / 2} ${GAUGE_SIZE / 2})`}
+                  />
+                </Svg>
+              </View>
+              <View style={styles.gaugeInnerContent}>
+                <AppText variant="headlineLarge" color="text" weight="700">
+                  {score}
+                </AppText>
+                <AppText variant="bodySmall" color="muted">
+                  out of 100
+                </AppText>
+                <View style={[styles.riskPill, { backgroundColor: theme.colors.error }]}> 
+                  <AppText variant="labelMedium" color="onPrimary" weight="600">
+                    High Risk
                   </AppText>
                 </View>
-                <AppText variant="labelSmall" color="muted">
-                  {doc.modified}
-                </AppText>
-              </View>
-              <View style={styles.badgeRow}>
-                {doc.badges.map((badge) => {
-                  const palette = resolveTone(badge.tone as Tone);
-                  return (
-                    <View
-                      key={badge.label}
-                      style={[styles.badge, { backgroundColor: palette.track }]}
-                    >
-                      <AppIcon name="alert-circle" size={14} color={palette.fill} />
-                      <AppText variant="labelSmall" style={{ color: palette.fill, fontWeight: '600' }}>
-                        {badge.label}
-                      </AppText>
-                    </View>
-                  );
-                })}
               </View>
             </View>
-          ))}
-        </View>
-
-        <View style={[styles.riskColumn, styles.scorePanel, { backgroundColor: theme.colors.primaryContainer }]}> 
-          <AppText variant="labelMedium" color="muted">
-            Risk Score
-          </AppText>
-          <View style={styles.gaugeWrapper}>
-            <View style={styles.gaugeSvgWrapper}>
-              <Svg width={GAUGE_SIZE} height={GAUGE_SIZE}>
-                <Defs>
-                  <SvgLinearGradient id={gradientId} x1="0%" y1="50%" x2="100%" y2="50%" gradientUnits="userSpaceOnUse">
-                    <Stop offset="0%" stopColor="#DC2626" />
-                    <Stop offset="45%" stopColor="#F97316" />
-                    <Stop offset="100%" stopColor="#16A34A" />
-                  </SvgLinearGradient>
-                </Defs>
-                <Circle
-                  cx={GAUGE_SIZE / 2}
-                  cy={GAUGE_SIZE / 2}
-                  r={GAUGE_RADIUS}
-                  stroke={`url(#${gradientId})`}
-                  strokeOpacity={0.25}
-                  strokeWidth={GAUGE_STROKE}
-                  fill="none"
-                  strokeLinecap="round"
-                  strokeDasharray={`${sweepLength} ${GAUGE_CIRCUMFERENCE}`}
-                  transform={`rotate(-180 ${GAUGE_SIZE / 2} ${GAUGE_SIZE / 2})`}
-                />
-                <Circle
-                  cx={GAUGE_SIZE / 2}
-                  cy={GAUGE_SIZE / 2}
-                  r={GAUGE_RADIUS}
-                  stroke={`url(#${gradientId})`}
-                  strokeWidth={GAUGE_STROKE}
-                  fill="none"
-                  strokeLinecap="round"
-                  strokeDasharray={`${sweepLength} ${GAUGE_CIRCUMFERENCE}`}
-                  strokeDashoffset={`${sweepLength - progressLength}`}
-                  transform={`rotate(-180 ${GAUGE_SIZE / 2} ${GAUGE_SIZE / 2})`}
-                />
-              </Svg>
-            </View>
-            <View style={styles.gaugeInnerContent}>
-              <AppText variant="displayLarge" color="text" weight="700">
-                {score}
+            <View style={styles.aiRecommendationStack}>
+              <AppButton
+                label="AI Recommendation"
+                icon="robot"
+                compact
+                tone="info"
+                variant="primary"
+              />
+              <AppText variant="bodySmall" color="muted" style={{ textAlign: 'center' }}>
+                Manual review required before approval
               </AppText>
-              <AppText variant="bodyMedium" color="muted">
-                / 100
-              </AppText>
-              <View style={[styles.riskPill, { backgroundColor: theme.colors.error }]}> 
-                <AppText variant="labelMedium" color="onPrimary" weight="600">
-                  High Risk
-                </AppText>
-              </View>
             </View>
           </View>
-          <View style={styles.gaugeScale}>
-            <AppText variant="labelSmall" color="muted">
-              0
+          <View style={styles.suggestedActionsSection}>
+            <AppText variant="labelMedium" color="muted" style={{ marginBottom: 8 }}>
+              Suggested Actions
             </AppText>
-            <AppText variant="labelSmall" color="muted">
-              100
-            </AppText>
-          </View>
-          <View style={[styles.aiNote, { backgroundColor: `${theme.colors.info}18` }]}>
-            <AppIcon name="robot" size={16} color={theme.colors.info} />
-            <AppText variant="labelSmall" color="muted">
-              AI Recommendation: Manual review required
-            </AppText>
+            {suggestedActions.map((action) => (
+              <View key={action.label} style={[styles.actionChip, { backgroundColor: theme.colors.surface }]}> 
+                <View style={[styles.actionIconBadge, { backgroundColor: `${theme.colors.info}1A` }]}> 
+                  <AppIcon name={action.icon as any} size={18} color={theme.colors.info} />
+                </View>
+                <AppText variant="bodyMedium" color="text" weight="500" style={{ flex: 1 }}>
+                  {action.label}
+                </AppText>
+                <AppIcon name="chevron-right" size={20} color={theme.colors.muted} />
+              </View>
+            ))}
           </View>
         </View>
 
         <View style={[styles.riskColumn, { backgroundColor: theme.colors.surfaceVariant }]}>
-          <AppText variant="labelMedium" color="muted" style={{ marginBottom: 8 }}>
-            Risk Breakdown
-          </AppText>
-          {riskBreakdown.map((item) => {
-            const palette = resolveTone(item.tone as Tone);
+          <View style={styles.signalsHeaderRow}>
+            <View style={styles.signalsHeaderLeft}>
+              <AppIcon name="flag" size={18} color={theme.colors.error} />
+              <AppText variant="labelMedium" color="text" weight="600">
+                Fraud Signals
+              </AppText>
+            </View>
+            <AppText variant="labelSmall" color="muted" weight="500">
+              Severity
+            </AppText>
+          </View>
+          {fraudSignals.map((signal) => {
+            const palette = getSeverityPalette(signal.severity);
             return (
-              <View key={item.label} style={styles.breakdownRow}>
-                <View style={styles.breakdownHeader}>
-                  <AppText variant="bodyMedium" color="text" weight="500">
-                    {item.label}
+              <View key={signal.label} style={styles.signalRow}>
+                <AppText variant="bodyMedium" color="text" weight="500" style={{ flex: 1 }}>
+                  {signal.label}
+                </AppText>
+                <View style={[styles.severityBadge, { backgroundColor: palette.background }]}> 
+                  <AppText variant="labelSmall" weight="600" style={{ color: palette.text }}>
+                    {signal.severity}
                   </AppText>
-                  <AppText variant="bodyMedium" color="text" weight="600" style={{ color: palette.fill }}>
-                    {item.value}%
-                  </AppText>
-                </View>
-                <View style={[styles.riskBarTrack, { backgroundColor: palette.track }]}>
-                  <View style={[styles.riskBarFill, { width: `${item.value}%`, backgroundColor: palette.fill }]} />
                 </View>
               </View>
             );
@@ -358,28 +727,46 @@ const styles = StyleSheet.create({
     gap: 16,
     paddingBottom: 40,
   },
-  summaryRow: {
+  tabBar: {
     flexDirection: 'row',
-    gap: 16,
+    borderRadius: 20,
+    paddingHorizontal: 4,
+    paddingVertical: 4,
+    gap: 8,
   },
-  summaryCard: {
+  tabItem: {
     flex: 1,
-    padding: 16,
-    borderRadius: 16,
-    gap: 12,
+    minHeight: 40,
+    borderRadius: 18,
+    borderWidth: 1,
+    borderColor: 'transparent',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 4,
+    paddingHorizontal: 10,
+    minWidth: 0,
+  },
+  tabContentRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  summaryStrip: {
+    flexDirection: 'row',
+    borderRadius: 18,
+    paddingVertical: 18,
+    paddingHorizontal: 12,
     elevation: 2,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
+    shadowOpacity: 0.08,
+    shadowRadius: 6,
   },
-  iconBox: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+  summaryCell: {
+    flex: 1,
     alignItems: 'center',
-    justifyContent: 'center',
-    alignSelf: 'flex-start',
+    gap: 4,
+    paddingHorizontal: 8,
   },
   card: {
     borderRadius: 16,
@@ -390,29 +777,125 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 4,
   },
+  quickActionsCard: {
+    gap: 16,
+  },
+  quickActionHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  quickSummaryContainer: {
+    borderRadius: 14,
+    padding: 14,
+    borderWidth: 1,
+    gap: 6,
+  },
+  quickSummaryBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  quickActionList: {
+    gap: 12,
+  },
+  quickActionItem: {
+    borderRadius: 14,
+    borderWidth: 1,
+    padding: 12,
+    gap: 6,
+  },
+  quickActionButton: {
+    alignSelf: 'stretch',
+  },
   cardHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     marginBottom: 16,
   },
-  chartPlaceholder: {
-    height: 150,
+  performanceCard: {
+    gap: 8,
+  },
+  performanceHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    gap: 16,
+  },
+  dropdownWrapper: {
+    position: 'relative',
+  },
+  dropdownButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 12,
+    borderWidth: 1,
+  },
+  dropdownMenu: {
+    position: 'absolute',
+    top: '100%',
+    right: 0,
+    marginTop: 6,
+    borderRadius: 12,
+    borderWidth: 1,
+    overflow: 'hidden',
+    zIndex: 10,
+    minWidth: 180,
+  },
+  dropdownOption: {
+    paddingVertical: 10,
+    paddingHorizontal: 14,
+  },
+  chartWrapper: {
+    marginTop: 12,
+    height: 220,
+    position: 'relative',
+    paddingHorizontal: 4,
+    paddingBottom: 8,
+  },
+  chartTooltip: {
+    position: 'absolute',
+    bottom: '100%',
+    marginBottom: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    borderRadius: 12,
+    borderWidth: 1,
+    alignItems: 'center',
+    minWidth: 130,
+    shadowColor: '#000',
+    shadowOpacity: 0.12,
+    shadowRadius: 10,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 4,
+    transform: [{ translateX: -65 }],
+  },
+  chartBars: {
     flexDirection: 'row',
     alignItems: 'flex-end',
     justifyContent: 'space-between',
-    paddingHorizontal: 8,
-    marginBottom: 8,
+    gap: 12,
+    height: '100%',
   },
-  bar: {
+  chartBarPressable: {
+    flex: 1,
+    alignItems: 'center',
+    gap: 8,
+  },
+  barTrack: {
     width: 24,
-    borderRadius: 4,
-    opacity: 0.8,
+    height: 160,
+    borderRadius: 12,
+    justifyContent: 'flex-end',
+    overflow: 'hidden',
   },
-  chartLabels: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    paddingHorizontal: 8,
+  barFill: {
+    width: '100%',
+    borderRadius: 12,
   },
   activityItem: {
     flexDirection: 'row',
@@ -480,9 +963,29 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  gaugeWrapper: {
+  scoreHeaderRow: {
     width: '100%',
+    flexDirection: 'row',
+    justifyContent: 'space-between',
     alignItems: 'center',
+  },
+  scoreSummaryRow: {
+    width: '100%',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 16,
+    marginTop: 12,
+  },
+  scoreSummaryStack: {
+    flexDirection: 'column',
+    alignItems: 'center',
+  },
+  gaugeWrapper: {
+    width: GAUGE_SIZE,
+    height: GAUGE_SIZE,
+    alignItems: 'center',
+    justifyContent: 'center',
     marginVertical: 12,
     position: 'relative',
   },
@@ -505,42 +1008,59 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
+  aiRecommendationStack: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    minWidth: 160,
+  },
   riskPill: {
     marginTop: 12,
     borderRadius: 999,
     paddingHorizontal: 16,
     paddingVertical: 6,
   },
-  gaugeScale: {
-    width: '70%',
+  suggestedActionsSection: {
+    width: '100%',
+    marginTop: 16,
+  },
+  actionChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 12,
+    borderRadius: 14,
+    marginBottom: 8,
+    gap: 10,
+  },
+  actionIconBadge: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  signalsHeaderRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginBottom: 12,
+    alignItems: 'center',
+    marginBottom: 8,
   },
-  aiNote: {
+  signalsHeaderLeft: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
-    padding: 10,
-    borderRadius: 12,
   },
-  breakdownRow: {
-    marginBottom: 12,
-    gap: 6,
-  },
-  breakdownHeader: {
+  signalRow: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
+    paddingVertical: 10,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: 'rgba(15, 23, 42, 0.1)',
   },
-  riskBarTrack: {
-    height: 8,
+  severityBadge: {
+    paddingHorizontal: 12,
+    paddingVertical: 4,
     borderRadius: 999,
-    backgroundColor: '#E2E8F0',
-  },
-  riskBarFill: {
-    height: '100%',
-    borderRadius: 999,
-    backgroundColor: '#2563EB',
   },
 });
