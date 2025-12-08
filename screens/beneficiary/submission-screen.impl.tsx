@@ -1,116 +1,108 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import {
   Alert,
   Dimensions,
-  Image,
   ScrollView,
   StyleSheet,
   TouchableOpacity,
   View,
+  ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import Svg, { Path } from 'react-native-svg';
 import { Ionicons } from '@expo/vector-icons';
-import * as ImagePicker from 'expo-image-picker';
-
 import { AppButton } from '@/components/atoms/app-button';
 import { AppIcon, type IconName } from '@/components/atoms/app-icon';
 import { AppText } from '@/components/atoms/app-text';
 import type { AppTheme } from '@/constants/theme';
 import { useAppTheme } from '@/hooks/use-app-theme';
+import { evidenceRequirementApi, type EvidenceRequirementRecord } from '@/services/api/evidenceRequirements';
+import { useAuthStore } from '@/state/authStore';
 
 const { width } = Dimensions.get('window');
 
-type UploadKey = 'asset' | 'machinery' | 'documents';
-
-type UploadState = Partial<Record<UploadKey, { uri: string; name: string; type?: string }>>;
-
-const uploadRows: Array<{ key: UploadKey; title: string; icon: IconName }> = [
-  { key: 'asset', title: 'Asset', icon: 'cube-outline' },
-  { key: 'machinery', title: 'Invoice / Bills', icon: 'receipt-text-outline' },
-  { key: 'documents', title: 'Documents', icon: 'file-document-outline' },
-];
-
 export type SubmissionScreenProps = {
-  navigation: { goBack: () => void };
+  navigation: { goBack: () => void; navigate: (screen: string, params?: any) => void };
 };
 
 export const SubmissionScreen = ({ navigation }: SubmissionScreenProps) => {
   const theme = useAppTheme();
   const styles = useMemo(() => createStyles(theme), [theme]);
-  const [uploads, setUploads] = useState<UploadState>({});
-  const gradientColors = useMemo<readonly [string, string]>(
+  const beneficiaryId = useAuthStore((s) => s.profile?.id);
+  const beneficiaryMobile = useAuthStore((s) => s.profile?.mobile ?? s.mobile);
+  const [requirements, setRequirements] = useState<EvidenceRequirementRecord[]>([]);
+  const [loading, setLoading] = useState(false);
+  const gradientColors = useMemo<readonly [string, string, ...string[]]>(
     () => (theme.mode === 'dark' ? [theme.colors.gradientStart, theme.colors.gradientEnd] : ['#A7F3D0', '#6EE7B7']),
     [theme]
   );
 
-  const handleUploadPress = (key: UploadKey) => {
-    Alert.alert('Upload', 'Choose a source', [
-      { text: 'Camera', onPress: () => openPicker(key, 'camera') },
-      { text: 'Files', onPress: () => openPicker(key, 'library') },
-      { text: 'Cancel', style: 'cancel' },
-    ]);
-  };
+  useEffect(() => {
+    if (!beneficiaryId && !beneficiaryMobile) return;
+    let active = true;
+    const load = async () => {
+      setLoading(true);
+      try {
+        const primaryKey = beneficiaryId || beneficiaryMobile || '';
+        const primary = primaryKey ? await evidenceRequirementApi.list(primaryKey) : [];
+        if (!active) return;
 
-  const openPicker = async (key: UploadKey, source: 'camera' | 'library') => {
-    const permission =
-      source === 'camera'
-        ? await ImagePicker.requestCameraPermissionsAsync()
-        : await ImagePicker.requestMediaLibraryPermissionsAsync();
+        if (primary.length) {
+          setRequirements(primary);
+          return;
+        }
 
-    if (permission.status !== 'granted') {
-      Alert.alert('Permission needed', 'Please allow access to continue.');
+        if (beneficiaryMobile && beneficiaryMobile !== primaryKey) {
+          const fallback = await evidenceRequirementApi.list(beneficiaryMobile);
+          if (!active) return;
+          setRequirements(fallback);
+          return;
+        }
+
+        setRequirements([]);
+      } catch (err) {
+        console.error('Load requirements failed', err);
+        if (active) Alert.alert('Error', 'Unable to load requirements');
+      } finally {
+        if (active) setLoading(false);
+      }
+    };
+    load();
+    return () => {
+      active = false;
+    };
+  }, [beneficiaryId, beneficiaryMobile]);
+
+  const handleUploadPress = (req: EvidenceRequirementRecord) => {
+    const allowCamera = req.permissions?.camera !== false;
+    const allowFiles = req.permissions?.fileUpload !== false;
+
+    if (!allowCamera && !allowFiles) {
+      Alert.alert('Not Allowed', 'Uploads are disabled for this requirement.');
       return;
     }
 
-    const result =
-      source === 'camera'
-        ? await ImagePicker.launchCameraAsync({ mediaTypes: ImagePicker.MediaTypeOptions.All, quality: 0.6 })
-        : await ImagePicker.launchImageLibraryAsync({ mediaTypes: ImagePicker.MediaTypeOptions.All, quality: 0.6 });
+    const goCamera = () => navigation.navigate('UploadEvidence', { requirementId: req.id, requirementName: req.label, startWithLibrary: false });
+    const goFiles = () => navigation.navigate('UploadEvidence', { requirementId: req.id, requirementName: req.label, startWithLibrary: true });
 
-    if (result.canceled || !result.assets?.length) return;
-
-    const file = result.assets[0];
-    const name = file.fileName || file.uri.split('/').pop() || 'Selected file';
-
-    setUploads((prev) => ({
-      ...prev,
-      [key]: {
-        uri: file.uri,
-        name,
-        type: file.mimeType || file.type,
-      },
-    }));
-  };
-
-  const renderPreview = (key: UploadKey) => {
-    const file = uploads[key];
-    if (!file) {
-      return <AppText variant="labelSmall" color="muted">No file uploaded yet</AppText>;
+    if (allowCamera && allowFiles) {
+      Alert.alert('Choose source', 'Select how you want to upload', [
+        { text: 'Camera', onPress: goCamera },
+        { text: 'Files', onPress: goFiles },
+        { text: 'Cancel', style: 'cancel' },
+      ]);
+      return;
     }
 
-    const isImage = (file.type || '').includes('image');
+    if (allowCamera) {
+      goCamera();
+      return;
+    }
 
-    return (
-      <View style={styles.previewRow}>
-        {isImage ? (
-          <Image source={{ uri: file.uri }} style={styles.previewImage} resizeMode="cover" />
-        ) : (
-          <View style={styles.previewPlaceholder}>
-            <AppIcon name="file-outline" size={18} color={theme.colors.secondary} />
-          </View>
-        )}
-        <View style={{ flex: 1 }}>
-          <AppText variant="bodySmall" color="text" numberOfLines={1}>
-            {file.name}
-          </AppText>
-          <AppText variant="labelSmall" color="muted">
-            Ready to submit
-          </AppText>
-        </View>
-      </View>
-    );
+    if (allowFiles) {
+      goFiles();
+    }
   };
 
   return (
@@ -148,26 +140,54 @@ export const SubmissionScreen = ({ navigation }: SubmissionScreenProps) => {
           </AppText>
         </View>
 
-        {uploadRows.map((row) => (
-          <View key={row.key} style={[styles.uploadCard, { backgroundColor: theme.colors.surface, borderColor: theme.colors.border }]}>
-            <View style={styles.iconBadge}>
-              <AppIcon name={row.icon} size={22} color={theme.colors.secondary} />
-            </View>
-
-            <View style={styles.cardBody}>
-              <AppText variant="titleSmall" color="text">{row.title}</AppText>
-              <AppText variant="labelSmall" color="muted">Upload required evidence</AppText>
-              <View style={{ marginTop: 8 }}>{renderPreview(row.key)}</View>
-            </View>
-
-            <AppButton
-              label="Upload"
-              tone="secondary"
-              onPress={() => handleUploadPress(row.key)}
-              style={styles.uploadButton}
-            />
+        {loading ? (
+          <View style={styles.loaderRow}>
+            <ActivityIndicator size="small" color={theme.colors.primary} />
+            <AppText variant="labelMedium" color="muted">Loading requirements...</AppText>
           </View>
-        ))}
+        ) : requirements.length === 0 ? (
+          <AppText variant="bodyMedium" color="muted">No requirements available.</AppText>
+        ) : (
+          requirements.map((req) => (
+            <View
+              key={req.id}
+              style={[styles.uploadCard, { backgroundColor: theme.colors.surface, borderColor: theme.colors.border }]}
+            >
+              <View style={styles.iconBadge}>
+                <AppIcon name="cloud-upload-outline" size={22} color={theme.colors.secondary} />
+              </View>
+
+              <View style={styles.cardBody}>
+                <AppText variant="titleSmall" color="text">{req.label}</AppText>
+                <AppText variant="labelSmall" color="muted">Upload required evidence</AppText>
+                <View style={styles.permissionRow}>
+                  <AppText variant="labelSmall" color="muted">
+                    Camera: {req.permissions?.camera === false ? 'Disabled' : 'Allowed'}
+                  </AppText>
+                  <AppText variant="labelSmall" color="muted">
+                    Files: {req.permissions?.fileUpload === false ? 'Disabled' : 'Allowed'}
+                  </AppText>
+                </View>
+              </View>
+
+              {req.status === 'submitted' ? (
+                <AppButton
+                  label="Pending for Review"
+                  tone="secondary"
+                  disabled
+                  style={styles.uploadButton}
+                />
+              ) : (
+                <AppButton
+                  label="Upload"
+                  tone="secondary"
+                  onPress={() => handleUploadPress(req)}
+                  style={styles.uploadButton}
+                />
+              )}
+            </View>
+          ))
+        )}
       </ScrollView>
     </View>
   );
@@ -221,28 +241,11 @@ const createStyles = (theme: AppTheme) =>
       fontWeight: 'bold',
       color: theme.colors.onPrimary,
     },
-    backButton: {
-      padding: 8,
-    },
-    scrollContent: {
-      paddingTop: 160,
-      paddingHorizontal: 24,
-      paddingBottom: 40,
-      gap: 18,
-    },
-    sectionHeader: {
-      gap: 6,
-    },
-    headingRow: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      gap: 10,
-    },
-    headingIcon: {
-      textShadowColor: 'rgba(0,0,0,0.08)',
-      textShadowOffset: { width: 0, height: 1 },
-      textShadowRadius: 2,
-    },
+      headingIcon: {
+        textShadowColor: 'rgba(0,0,0,0.08)',
+        textShadowOffset: { width: 0, height: 1 },
+        textShadowRadius: 2,
+      },
     headingText: {
       fontWeight: '700',
       letterSpacing: 0.3,
@@ -289,20 +292,38 @@ const createStyles = (theme: AppTheme) =>
       gap: 10,
       paddingVertical: 6,
     },
-    previewImage: {
-      width: 46,
-      height: 46,
-      borderRadius: 12,
-      backgroundColor: theme.colors.surfaceVariant,
+    backButton: {
+      padding: 8,
     },
-    previewPlaceholder: {
-      width: 46,
-      height: 46,
-      borderRadius: 12,
+    scrollContent: {
+      paddingTop: 160,
+      paddingHorizontal: 24,
+      paddingBottom: 40,
+      zIndex: 10,
+      gap: 32,
+    },
+    sectionHeader: {
+      paddingHorizontal: 4,
+      marginTop: 20,
+      marginBottom: 24,
+      gap: 6,
+    },
+    headingRow: {
+      flexDirection: 'row',
       alignItems: 'center',
-      justifyContent: 'center',
-      backgroundColor: theme.colors.surfaceVariant,
-      borderWidth: 1,
-      borderColor: theme.colors.border,
+      gap: 12,
+      marginBottom: 6,
+    },
+    permissionRow: {
+      flexDirection: 'row',
+      gap: 12,
+      flexWrap: 'wrap',
+      marginTop: 4,
+    },
+    loaderRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 8,
+      paddingVertical: 12,
     },
   });

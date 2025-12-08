@@ -43,11 +43,12 @@ const SUPPORTED_LANGUAGES = [
 type LanguageCode = (typeof SUPPORTED_LANGUAGES)[number]['code'];
 type CalculatorRoute = 'EmiCalculator' | 'SubsidyCalculator' | 'EligibilityPrediction';
 
-type MenuItemKey = 'trackLoan' | 'uploadEvidence' | 'geoCamera' | 'notifications' | 'contactOfficer' | 'myProfile';
+type MenuItemKey = 'trackLoan' | 'evidenceTasks' | 'geoCamera' | 'notifications' | 'contactOfficer' | 'myProfile';
 
 const menuItems: Array<{ key: MenuItemKey; title: string; icon: IconName; color: string; background: string }> = [
     { key: 'trackLoan', title: 'Track Loan', icon: 'clipboard-text-clock-outline', color: '#1D4ED8', background: '#E8F2FF' },
-    { key: 'uploadEvidence', title: 'Upload Evidence', icon: 'cloud-upload-outline', color: '#7C3AED', background: '#F3E8FF' },
+
+    { key: 'evidenceTasks', title: 'Evidence Tasks', icon: 'clipboard-text-outline', color: '#0EA5E9', background: '#E0F2FE' },
     { key: 'geoCamera', title: 'Live Map', icon: 'map-outline', color: '#0F766E', background: '#E6FFFA' },
     { key: 'notifications', title: 'Notifications', icon: 'bell-outline', color: '#D97706', background: '#FFF8E1' },
     { key: 'contactOfficer', title: 'Contact Officer', icon: 'card-account-phone-outline', color: '#059669', background: '#E8F9EE' },
@@ -315,8 +316,9 @@ export const BeneficiaryDashboardScreen = () => {
             case 'trackLoan':
                     navigation.navigate('PreviousSubmissions' as never);
                     break;
-            case 'uploadEvidence':
-                navigation.navigate('Submission' as never);
+
+            case 'evidenceTasks':
+                navigation.navigate('EvidenceTasks' as never);
                     break;
             case 'geoCamera':
                     setUserLocation(null);

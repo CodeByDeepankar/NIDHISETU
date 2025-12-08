@@ -154,6 +154,24 @@ const updateAIAnalysis = async (id: string, aiAnalysis: any): Promise<void> => {
   if (error) throw error;
 };
 
+const listAllPending = async (): Promise<(SubmissionEvidence & { beneficiary?: any })[]> => {
+  if (!supabase) throw new Error('Supabase not initialized');
+
+  const { data, error } = await supabase
+    .from(COLLECTION_NAME)
+    .select('*, beneficiary:beneficiaries(*)')
+    .eq('status', 'submitted')
+    .order('submittedAt', { ascending: true });
+
+  if (error) throw error;
+  
+  return (data || []).map((item: any) => ({
+    ...materializeSubmission(item),
+    beneficiaryId: item.beneficiaryId,
+    beneficiary: item.beneficiary,
+  }));
+};
+
 export const submissionRepository = {
   listByBeneficiary,
   subscribeToBeneficiarySubmissions,
@@ -161,4 +179,5 @@ export const submissionRepository = {
   createSubmissions,
   updateStatus,
   updateAIAnalysis,
+  listAllPending,
 };

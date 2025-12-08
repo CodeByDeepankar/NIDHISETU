@@ -11,7 +11,8 @@ export type BeneficiaryDrawerParamList = {
   BeneficiaryRoot: undefined;
   BeneficiaryDashboard: undefined;
   Submission: undefined;
-  UploadEvidence: { requirementId?: string; requirementName?: string } | undefined;
+  UploadEvidence: { requirementId?: string; requirementName?: string; startWithLibrary?: boolean } | undefined;
+  EvidenceTasks: undefined;
   PreviousSubmissions: undefined;
   SubmissionDetail: { submission: any };
   BeneficiaryProfile: undefined;
