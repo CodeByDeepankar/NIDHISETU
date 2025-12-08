@@ -643,11 +643,7 @@ const createStyles = (theme: AppTheme) => {
       justifyContent: 'center',
     },
 
-    chip: {
-      padding: 10,
-      backgroundColor: "#eef2ff",
-      borderRadius: 14,
-    },
+
     heroTitle: {
       fontSize: 18,
       fontWeight: '700',
@@ -658,12 +654,7 @@ const createStyles = (theme: AppTheme) => {
       color: theme.colors.subtext,
     },
 
-    botBubble: {
-      alignSelf: "flex-start",
-      borderWidth: 1,
-      borderColor: theme.colors.border,
-      backgroundColor: theme.colors.surface,
-    },
+
     welcomeBubble: {
       flexDirection: 'row',
       alignItems: 'flex-start',
@@ -830,6 +821,7 @@ const createStyles = (theme: AppTheme) => {
       borderBottomLeftRadius: 8,
       borderWidth: 1,
       borderColor: theme.colors.border,
+      backgroundColor: theme.colors.surface,
     },
     messageText: {
       fontSize: 15,
