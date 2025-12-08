@@ -1,4 +1,6 @@
-import { useState } from 'react';
+import { useState, useCallback, useEffect } from 'react';
+import { useFocusEffect } from '@react-navigation/native';
+import { analyticsService, type AnalyticsSummary, type ActivityLogEntry, type PerformancePoint } from '@/services/api/analyticsService';
 
 import { AppButton } from '@/components/atoms/app-button';
 import type { IconName } from '@/components/atoms/app-icon';
@@ -23,7 +25,44 @@ export const ReportsScreen = () => {
   const [duration, setDuration] = useState<DurationKey>('6m');
   const [isDurationMenuOpen, setDurationMenuOpen] = useState(false);
   const [activeTooltip, setActiveTooltip] = useState<{ label: string; value: number; index: number } | null>(null);
-  const selectedSeries = performanceSeries[duration];
+
+  // Real-time State
+  const [metrics, setMetrics] = useState<AnalyticsSummary>({ total: 0, approved: 0, rejected: 0, pending: 0 });
+  const [activities, setActivities] = useState<ActivityLogEntry[]>([]);
+  const [performanceData, setPerformanceData] = useState<PerformancePoint[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  // Load Data
+  useFocusEffect(
+    useCallback(() => {
+      let active = true;
+      const load = async () => {
+        try {
+          // Determine months based on duration (simple mapping for now)
+          const months = duration === '3m' ? 3 : duration === '12m' ? 12 : 6;
+          
+          const [m, a, p] = await Promise.all([
+            analyticsService.getSummaryMetrics(),
+            analyticsService.getRecentActivity(),
+            analyticsService.getPerformanceData(months)
+          ]);
+
+          if (active) {
+            setMetrics(m);
+            setActivities(a);
+            setPerformanceData(p);
+            setLoading(false);
+          }
+        } catch (err) {
+          console.error('Reports fetch error', err);
+        }
+      };
+      load();
+      return () => { active = false; };
+    }, [duration])
+  );
+
+  const selectedSeries = performanceData;
   const maxPerformanceValue = Math.max(...selectedSeries.map((point) => point.value), 1);
   const tooltipLeftPercent = activeTooltip
     ? ((activeTooltip.index + 0.5) / selectedSeries.length) * 100
@@ -165,7 +204,7 @@ export const ReportsScreen = () => {
           </View>
         );
       case 'activity':
-        return <ActivityLogCard />;
+        return <ActivityLogCard data={activities} />;
       default:
         return null;
     }
@@ -176,7 +215,7 @@ export const ReportsScreen = () => {
       <WaveHeader title="Reports & Analytics" />
 
       <ScrollView contentContainerStyle={styles.content}>
-        <SummaryStrip />
+        <SummaryStrip data={metrics} />
 
         <QuickActionPanel />
 
@@ -319,16 +358,24 @@ const performanceSeries: Record<DurationKey, Array<{ label: string; value: numbe
   ],
 };
 
-const SummaryStrip = () => {
+const SummaryStrip = ({ data }: { data: AnalyticsSummary }) => {
   const theme = useAppTheme();
+  
+  const items = [
+    { label: 'Total', value: String(data.total), tone: '#4F46E5' },
+    { label: 'Approved', value: String(data.approved), tone: '#10B981' },
+    { label: 'Pending', value: String(data.pending), tone: '#F59E0B' },
+    { label: 'Rejected', value: String(data.rejected), tone: '#EF4444' },
+  ];
+
   return (
     <View style={[styles.summaryStrip, { backgroundColor: theme.colors.surface }]}>
-      {summaryMetrics.map((metric, index) => (
+      {items.map((metric, index) => (
         <View
           key={metric.label}
           style={[
             styles.summaryCell,
-            index < summaryMetrics.length - 1 && {
+            index < items.length - 1 && {
               borderRightWidth: StyleSheet.hairlineWidth,
               borderRightColor: `${theme.colors.border}60`,
             },
@@ -476,23 +523,27 @@ const DocumentAlertsPanel = () => {
   );
 };
 
-const ActivityLogCard = () => {
+const ActivityLogCard = ({ data }: { data: ActivityLogEntry[] }) => {
   const theme = useAppTheme();
   return (
     <View style={[styles.card, { backgroundColor: theme.colors.surface }]}> 
       <AppText variant="titleMedium" color="text" weight="600" style={{ marginBottom: 16 }}>
         Activity Log
       </AppText>
-      {activityLogEntries.map((entry) => (
+      {data.length === 0 ? (
+        <AppText variant="bodyMedium" color="muted">No recent activity.</AppText>
+      ) : (
+        data.map((entry, idx) => (
         <ActivityItem
-          key={`${entry.title}-${entry.time}`}
+          key={`${entry.title}-${entry.time}-${idx}`}
           title={entry.title}
           subtitle={entry.subtitle}
           time={entry.time}
           icon={entry.icon}
           color={entry.color}
         />
-      ))}
+        ))
+      )}
     </View>
   );
 };
