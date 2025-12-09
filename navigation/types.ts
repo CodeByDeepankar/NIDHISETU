@@ -34,6 +34,7 @@ export type OfficerStackParamList = {
   VerificationTasks: undefined;
   VerificationDetail: { beneficiaryId: string } | undefined;
   OfficerSubmissionDetail: { submission: any; beneficiaryId: string };
+  Zones: undefined;
   Reports: undefined;
   Notifications: undefined;
   Settings: undefined;
