@@ -1,13 +1,12 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import React, { useEffect, useState } from 'react';
-import { ScrollView, StyleSheet, TouchableOpacity, View, Image, ActivityIndicator, Alert, TextInput, Modal, Switch } from 'react-native';
+import { ScrollView, StyleSheet, TouchableOpacity, View, Image, ActivityIndicator, Alert, TextInput, Modal } from 'react-native';
 
 import { AppButton } from '@/components/atoms/app-button';
 import { AppText } from '@/components/atoms/app-text';
 import { WaveHeader } from '@/components/molecules/wave-header';
 import { useAppTheme } from '@/hooks/use-app-theme';
-import { evidenceRequirementApi, type EvidenceRequirementRecord } from '@/services/api/evidenceRequirements';
 import { beneficiaryRepository } from '@/services/api/beneficiaryRepository';
 import { submissionRepository } from '@/services/api/submissionRepository';
 import type { BeneficiaryRecord } from '@/types/beneficiary';
@@ -29,15 +28,6 @@ export const VerificationDetailScreen = () => {
   const [modalType, setModalType] = useState<'note' | 'reject' | 'return'>('note');
   const [noteText, setNoteText] = useState('');
 
-  // Requirement Modal state
-  const [showReqModal, setShowReqModal] = useState(false);
-  const [requirements, setRequirements] = useState<EvidenceRequirementRecord[]>([]);
-  const [reqLoading, setReqLoading] = useState(false);
-  const [newReqLabel, setNewReqLabel] = useState('');
-  const [newReqInstructions, setNewReqInstructions] = useState('');
-  const [newReqCamera, setNewReqCamera] = useState(true);
-  const [newReqFile, setNewReqFile] = useState(false);
-
   useEffect(() => {
     loadData();
   }, [id]);
@@ -45,77 +35,17 @@ export const VerificationDetailScreen = () => {
   const loadData = async () => {
     try {
       setLoading(true);
-      const benData = await beneficiaryRepository.getRecordByMobile(id);
-      setBeneficiary(benData);
-      const beneficiaryKey = benData?.id ?? id;
-      
-      const [subData, reqData] = await Promise.all([
-        submissionRepository.listByBeneficiary(beneficiaryKey),
-        evidenceRequirementApi.list(beneficiaryKey)
+      const [benData, subData] = await Promise.all([
+        beneficiaryRepository.getRecordByMobile(id),
+        submissionRepository.listByBeneficiary(id)
       ]);
-      
+      setBeneficiary(benData);
       setEvidences(subData);
-      setRequirements(reqData);
     } catch (error) {
       console.error(error);
       Alert.alert('Error', 'Failed to load beneficiary details');
     } finally {
       setLoading(false);
-    }
-  };
-
-  const loadRequirements = async () => {
-    if (!beneficiary) return;
-    try {
-      setReqLoading(true);
-      const beneficiaryKey = beneficiary.id ?? id;
-      const data = await evidenceRequirementApi.list(beneficiaryKey);
-      setRequirements(data);
-    } catch (error) {
-      console.error(error);
-    } finally {
-      setReqLoading(false);
-    }
-  };
-
-  const handleAddRequirement = async () => {
-    if (!newReqLabel.trim()) {
-      Alert.alert('Validation Error', 'Please enter a requirement name');
-      return;
-    }
-    if (!newReqCamera && !newReqFile) {
-      Alert.alert('Validation Error', 'Please enable at least one input method (Camera or File)');
-      return;
-    }
-
-    try {
-      setActionLoading(true);
-      const beneficiaryKey = beneficiary?.id ?? id;
-      
-      await evidenceRequirementApi.create({
-        beneficiary_id: beneficiaryKey,
-        label: newReqLabel,
-        instructions: newReqInstructions,
-        permissions: {
-          camera: newReqCamera,
-          fileUpload: newReqFile,
-        },
-        response_type: 'photo',
-        status: 'required',
-      });
-      
-      Alert.alert('Success', 'Requirement added');
-      setShowReqModal(false);
-      setNewReqLabel('');
-      setNewReqInstructions('');
-      setNewReqCamera(true);
-      setNewReqFile(false);
-      loadRequirements();
-    } catch (error) {
-      console.error(error);
-      Alert.alert('Error', 'Failed to add requirement');
-    } finally {
-      setActionLoading(false);
     }
   };
 
@@ -304,38 +234,6 @@ export const VerificationDetailScreen = () => {
           )}
         </View>
 
-        {/* Evidence Requirements Section */}
-        <View style={styles.sectionContainer}>
-          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-            <AppText style={styles.sectionTitle}>Evidence Requirements</AppText>
-            <TouchableOpacity onPress={() => setShowReqModal(true)}>
-              <AppText style={{ color: theme.colors.primary, fontWeight: '600' }}>+ Add Requirement</AppText>
-            </TouchableOpacity>
-          </View>
-
-          {reqLoading ? (
-            <ActivityIndicator size="small" color={theme.colors.primary} />
-          ) : requirements.length > 0 ? (
-            requirements.map((req) => (
-              <View key={req.id} style={styles.requirementItem}>
-                <View style={{ flex: 1 }}>
-                  <AppText style={styles.reqLabel}>{req.label}</AppText>
-                  {req.instructions ? <AppText style={styles.reqInstructions}>{req.instructions}</AppText> : null}
-                  <View style={styles.reqPermissions}>
-                     <Ionicons name={req.permissions?.camera !== false ? "camera" : "camera-outline"} size={14} color={req.permissions?.camera !== false ? theme.colors.primary : "#9CA3AF"} />
-                     <Ionicons name={req.permissions?.fileUpload !== false ? "folder" : "folder-outline"} size={14} color={req.permissions?.fileUpload !== false ? theme.colors.primary : "#9CA3AF"} />
-                  </View>
-                </View>
-                <View style={styles.reqStatusBadge}>
-                   <AppText style={styles.reqStatusText}>{req.status || 'pending'}</AppText>
-                </View>
-              </View>
-            ))
-          ) : (
-            <AppText style={{ color: '#9CA3AF', fontStyle: 'italic' }}>No specific requirements added.</AppText>
-          )}
-        </View>
-
         <AppText style={styles.sectionTitle}>Uploaded Evidence</AppText>
         
         <View style={styles.evidenceList}>
@@ -411,80 +309,6 @@ export const VerificationDetailScreen = () => {
                 onPress={submitModalAction}
               >
                 <AppText style={{ color: 'white', fontWeight: '600' }}>Submit</AppText>
-              </TouchableOpacity>
-            </View>
-          </View>
-        </View>
-      </Modal>
-
-      {/* Add Requirement Modal */}
-      <Modal
-        visible={showReqModal}
-        transparent
-        animationType="slide"
-        onRequestClose={() => setShowReqModal(false)}
-      >
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            <AppText style={styles.modalTitle}>Add Evidence Requirement</AppText>
-            
-            <View style={styles.formGroup}>
-              <AppText style={styles.inputLabel}>Requirement Name</AppText>
-              <TextInput
-                style={styles.textInput}
-                value={newReqLabel}
-                onChangeText={setNewReqLabel}
-                placeholder="e.g. Site Visit Photo"
-              />
-            </View>
-
-            <View style={styles.formGroup}>
-              <AppText style={styles.inputLabel}>Instructions (Optional)</AppText>
-              <TextInput
-                style={[styles.textInput, { height: 60 }]}
-                multiline
-                value={newReqInstructions}
-                onChangeText={setNewReqInstructions}
-                placeholder="Additional details for beneficiary..."
-              />
-            </View>
-
-            <View style={styles.switchRow}>
-              <AppText style={styles.switchLabel}>Allow Camera</AppText>
-              <Switch
-                value={newReqCamera}
-                onValueChange={setNewReqCamera}
-                trackColor={{ false: '#767577', true: theme.colors.primary }}
-              />
-            </View>
-
-            <View style={styles.switchRow}>
-              <AppText style={styles.switchLabel}>Allow File Upload</AppText>
-              <Switch
-                value={newReqFile}
-                onValueChange={setNewReqFile}
-                trackColor={{ false: '#767577', true: theme.colors.primary }}
-              />
-            </View>
-
-            <View style={styles.modalActions}>
-              <TouchableOpacity 
-                style={[styles.modalBtn, { backgroundColor: '#F3F4F6' }]}
-                onPress={() => setShowReqModal(false)}
-              >
-                <AppText style={{ color: '#374151' }}>Cancel</AppText>
-              </TouchableOpacity>
-              
-              <TouchableOpacity 
-                style={[styles.modalBtn, { backgroundColor: theme.colors.primary }]}
-                onPress={handleAddRequirement}
-                disabled={actionLoading}
-              >
-                {actionLoading ? (
-                  <ActivityIndicator size="small" color="white" />
-                ) : (
-                  <AppText style={{ color: 'white', fontWeight: '600' }}>Add Requirement</AppText>
-                )}
               </TouchableOpacity>
             </View>
           </View>
@@ -695,75 +519,5 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 10,
     borderRadius: 8,
-  },
-  requirementItem: {
-    backgroundColor: 'white',
-    padding: 12,
-    borderRadius: 8,
-    marginBottom: 8,
-    borderLeftWidth: 4,
-    borderLeftColor: '#3B82F6',
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 2,
-    elevation: 1,
-  },
-  reqLabel: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#374151',
-  },
-  reqInstructions: {
-    fontSize: 12,
-    color: '#6B7280',
-    marginTop: 2,
-  },
-  reqPermissions: {
-    flexDirection: 'row',
-    gap: 8,
-    marginTop: 6,
-  },
-  reqStatusBadge: {
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    backgroundColor: '#F3F4F6',
-    borderRadius: 6,
-  },
-  reqStatusText: {
-    fontSize: 10,
-    color: '#6B7280',
-    textTransform: 'uppercase',
-  },
-  formGroup: {
-    marginBottom: 16,
-  },
-  inputLabel: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: '#374151',
-    marginBottom: 6,
-  },
-  textInput: {
-    borderWidth: 1,
-    borderColor: '#D1D5DB',
-    borderRadius: 8,
-    padding: 10,
-    fontSize: 14,
-    color: '#1F2937',
-  },
-  switchRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 12,
-    paddingVertical: 4,
-  },
-  switchLabel: {
-    fontSize: 14,
-    color: '#374151',
   },
 });

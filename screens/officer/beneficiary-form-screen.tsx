@@ -16,10 +16,10 @@ import { beneficiaryRepository } from '@/services/api/beneficiaryRepository';
 import type { AddressDetails } from '@/services/googlePlaces';
 import { useAuthStore } from '@/state/authStore';
 import type {
-	BeneficiaryFormPayload,
-	BeneficiaryFormValues,
-	BeneficiaryMetadata,
-	OfficerContext,
+  BeneficiaryFormPayload,
+  BeneficiaryFormValues,
+  BeneficiaryMetadata,
+  OfficerContext,
 } from '@/types/beneficiary';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 
@@ -171,7 +171,8 @@ export const BeneficiaryFormScreen = ({ navigation }: BeneficiaryFormScreenProps
 		handleSubmit,
 		watch,
 		setValue,
-		formState: { errors, isSubmitting },
+		reset,
+		formState: { errors, isSubmitting, isDirty },
 	} = useForm<BeneficiaryFormValues>({ defaultValues, mode: 'onBlur' });
 
 	const metadataSeed = useMemo(
@@ -323,6 +324,7 @@ export const BeneficiaryFormScreen = ({ navigation }: BeneficiaryFormScreenProps
 
 		try {
 			const record = await beneficiaryRepository.saveDraft(payload, metadata);
+			reset(formValues, { keepDirty: false, keepTouched: false });
 			Alert.alert('Beneficiary saved', `UID ${record.metadata.beneficiaryUid}`, [
 				{ text: 'Continue editing' },
 				{
@@ -799,13 +801,16 @@ export const BeneficiaryFormScreen = ({ navigation }: BeneficiaryFormScreenProps
 				</View>
 
 				<View style={styles.footer}>
-					<AppButton
-						label={isSubmitting ? 'Saving...' : 'Save Beneficiary'}
-						onPress={onSubmit}
-						loading={isSubmitting}
-						disabled={isSubmitting}
-						style={styles.saveButton}
-					/>
+					{isDirty ? (
+						<AppButton
+							label={isSubmitting ? 'Saving...' : 'Save Beneficiary'}
+							onPress={onSubmit}
+							loading={isSubmitting}
+							disabled={isSubmitting}
+							tone="gradientStart"
+							style={styles.saveButton}
+						/>
+					) : null}
 				</View>
 			</ScrollView>
 		</View>
@@ -1066,7 +1071,12 @@ const styles = StyleSheet.create({
 	saveButton: {
 		backgroundColor: '#008080',
 		borderColor: '#008080',
-		borderWidth: 1,
+		borderRadius: 24,
+		shadowColor: '#000',
+		shadowOpacity: 0.1,
+		shadowOffset: { width: 0, height: 3 },
+		shadowRadius: 6,
+		elevation: 3,
 	},
 	gpsRow: {
 		flexDirection: 'row',

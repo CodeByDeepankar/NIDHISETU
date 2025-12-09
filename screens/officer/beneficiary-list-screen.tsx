@@ -20,13 +20,12 @@ import { useAppTheme } from '@/hooks/use-app-theme';
 import { useOfficerBeneficiaries } from '@/hooks/use-officer-beneficiaries';
 import type { BeneficiaryMetadata, BeneficiaryRecord } from '@/types/beneficiary';
 import type { BeneficiaryLoan } from '@/types/entities';
-import { evidenceRequirementApi, type EvidenceRequirementRecord } from '@/services/api/evidenceRequirements';
 
 const FILTER_OPTIONS = ['All', 'Pending', 'Approved', 'Rejected', 'High Priority'] as const;
 type FilterOption = (typeof FILTER_OPTIONS)[number];
 
 type DetailContext = { loan: BeneficiaryLoan; metadata?: BeneficiaryMetadata };
-type EvidenceStatus = 'required' | 'pending' | 'submitted' | 'uploaded' | 'rejected';
+type EvidenceStatus = 'required' | 'pending' | 'submitted';
 type ImageQuality = 'best' | 'good' | 'low';
 
 type EvidenceRequirement = {
@@ -44,7 +43,6 @@ type EvidenceRequirement = {
   responseType?: string;
   model?: string;
   imageQuality?: ImageQuality;
-  createdAt?: string;
 };
 type RequirementFormState = {
   documentName: string;
@@ -307,7 +305,6 @@ const BeneficiaryDetailSheet = ({
   const theme = useAppTheme();
   const baseRequests = useMemo(() => (loan ? buildEvidenceRequests(loan, metadata) : []), [loan, metadata]);
   const [requests, setRequests] = useState<EvidenceRequirement[]>(baseRequests);
-  const [reqLoading, setReqLoading] = useState(false);
   const [isFormOpen, setFormOpen] = useState(false);
   const [customRequirement, setCustomRequirement] = useState<RequirementFormState>(createRequirementFormState());
   const [formError, setFormError] = useState('');
@@ -319,38 +316,6 @@ const BeneficiaryDetailSheet = ({
     setFormError('');
   }, [baseRequests, loan?.id]);
 
-  useEffect(() => {
-    const fetchRemote = async () => {
-      if (!loan?.id) return;
-      try {
-        setReqLoading(true);
-        const remote = await evidenceRequirementApi.list(loan.id);
-        if (remote.length) {
-          setRequests(
-            remote.map((item): EvidenceRequirement => ({
-              id: item.id,
-              label: item.label,
-              status: (item.status as EvidenceStatus) ?? 'required',
-              instructions: item.instructions,
-              permissions: item.permissions ?? { camera: true, fileUpload: true },
-              responseType: item.response_type,
-              model: item.model,
-              imageQuality: item.image_quality as ImageQuality,
-              removable: true,
-              shared: true,
-              createdAt: item.created_at,
-            }))
-          );
-        }
-      } catch (error) {
-        console.error('Requirement fetch failed', error);
-      } finally {
-        setReqLoading(false);
-      }
-    };
-    fetchRemote();
-  }, [loan?.id]);
-
   const handleFormChange = <K extends keyof RequirementFormState>(key: K, value: RequirementFormState[K]) => {
     setCustomRequirement((prev) => ({ ...prev, [key]: value }));
     if (formError) {
@@ -358,7 +323,7 @@ const BeneficiaryDetailSheet = ({
     }
   };
 
-  const handleSaveRequirement = async () => {
+  const handleSaveRequirement = () => {
     const trimmedName = customRequirement.documentName.trim();
     const trimmedType = customRequirement.responseType.trim();
 
@@ -372,57 +337,30 @@ const BeneficiaryDetailSheet = ({
       return;
     }
 
-    try {
-      if (!loan?.id) {
-        setFormError('Beneficiary missing.');
-        return;
-      }
+    const newRequirement: EvidenceRequirement = {
+      id: `custom-${Date.now()}`,
+      label: trimmedName,
+      status: 'required',
+      instructions: 'Custom evidence request created by the officer.',
+      shared: true,
+      removable: true,
+      permissions: {
+        camera: true,
+        fileUpload: customRequirement.allowFileUpload,
+      },
+      responseType: trimmedType,
+      model: customRequirement.model.trim() || undefined,
+      imageQuality: customRequirement.imageQuality,
+    };
 
-      const created = await evidenceRequirementApi.create({
-        beneficiary_id: loan.id,
-        label: trimmedName,
-        status: 'required',
-        instructions: 'Custom evidence request created by the officer.',
-        permissions: {
-          camera: true,
-          fileUpload: customRequirement.allowFileUpload,
-        },
-        response_type: trimmedType,
-        model: customRequirement.model.trim() || undefined,
-        image_quality: customRequirement.imageQuality,
-      });
-
-      const newRequirement: EvidenceRequirement = {
-        id: created.id,
-        label: created.label,
-        status: (created.status as EvidenceStatus) ?? 'required',
-        instructions: created.instructions,
-        permissions: created.permissions ?? { camera: true, fileUpload: true },
-        responseType: created.response_type,
-        model: created.model,
-        imageQuality: created.image_quality as ImageQuality,
-        removable: true,
-        shared: true,
-        createdAt: created.created_at,
-      };
-
-      setRequests((prev) => [...prev, newRequirement]);
-      setCustomRequirement(createRequirementFormState());
-      setFormOpen(false);
-      setFormError('');
-    } catch (error) {
-      console.error('Save requirement failed', error);
-      setFormError('Unable to save requirement.');
-    }
+    setRequests((prev) => [...prev, newRequirement]);
+    setCustomRequirement(createRequirementFormState());
+    setFormOpen(false);
+    setFormError('');
   };
 
-  const handleRemoveRequirement = async (id: string) => {
-    try {
-      await evidenceRequirementApi.remove(id);
-      setRequests((prev) => prev.filter((req) => req.id !== id));
-    } catch (error) {
-      console.error('Remove requirement failed', error);
-    }
+  const handleRemoveRequirement = (id: string) => {
+    setRequests((prev) => prev.filter((req) => req.id !== id));
   };
 
   if (!loan) {
@@ -476,7 +414,6 @@ const BeneficiaryDetailSheet = ({
               <AppText style={[styles.sectionSubtitle, { color: theme.colors.muted }]}>
                 {requests.length} active
               </AppText>
-              {reqLoading ? <ActivityIndicator size="small" color={theme.colors.primary} /> : null}
             </View>
 
             <View style={styles.catalogToggleRow}>
@@ -646,9 +583,13 @@ const EvidenceRequestCard = ({ request, onRemove }: { request: EvidenceRequireme
         <AppText style={[styles.sharedLabel, { color: theme.colors.muted }]}>
           {request.shared === false ? 'Not shared with beneficiary' : 'Beneficiary can view this request'}
         </AppText>
-        <View style={[styles.evidenceStatusPill, { backgroundColor: palette.background }]}> 
-          <AppText style={[styles.evidenceStatusText, { color: palette.text }]}>{palette.label}</AppText>
-        </View>
+        <AppButton
+          label={request.status === 'submitted' ? 'Review Upload' : 'Request Upload'}
+          variant={request.status === 'submitted' ? 'outline' : 'primary'}
+          compact
+          icon={request.status === 'submitted' ? 'eye-outline' : 'cloud-upload'}
+          onPress={() => {}}
+        />
       </View>
     </View>
   );
@@ -657,26 +598,18 @@ const EvidenceRequestCard = ({ request, onRemove }: { request: EvidenceRequireme
 const getEvidencePalette = (theme: ReturnType<typeof useAppTheme>, status: EvidenceStatus) => {
   switch (status) {
     case 'submitted':
-    case 'uploaded':
       return {
         background: `${theme.colors.success}20`,
         text: theme.colors.success,
         border: `${theme.colors.success}40`,
-        label: 'Uploaded',
+        label: 'Submitted',
       };
     case 'pending':
       return {
         background: `${theme.colors.info}20`,
         text: theme.colors.info,
         border: `${theme.colors.info}40`,
-        label: 'Pending',
-      };
-    case 'rejected':
-      return {
-        background: `${theme.colors.error}20`,
-        text: theme.colors.error,
-        border: `${theme.colors.error}40`,
-        label: 'Rejected',
+        label: 'In Review',
       };
     default:
       return {
