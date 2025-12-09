@@ -27,29 +27,14 @@ export const OfficerDashboardScreen = () => {
     await refresh();
   };
 
-  const highRiskCases = Math.max(Math.round((analytics?.pending ?? 10) * 0.4), 4);
-  const pendingReviews = analytics?.pending ?? 12;
-  const deadlineCrossed = Math.max(Math.round((analytics?.total ?? 30) * 0.08), 2);
+  const highRiskCases = Math.max(Math.round((analytics?.pending ?? 10) * 0.3), 4);
+  const pendingReviews = analytics?.pending ?? 6;
+  const deadlineCrossed = Math.max(Math.round((analytics?.total ?? 30) * 0.06), 2);
 
-  const alertSummaryCards = [
-    {
-      title: 'High Risk',
-      count: highRiskCases.toString().padStart(2, '0'),
-      caption: 'Require manual validation',
-      tone: palette.red,
-    },
-    {
-      title: 'Pending Review',
-      count: pendingReviews.toString().padStart(2, '0'),
-      caption: 'Awaiting officer action',
-      tone: palette.gold,
-    },
-    {
-      title: 'Deadline Crossed',
-      count: deadlineCrossed.toString().padStart(2, '0'),
-      caption: 'Escalate before EOD',
-      tone: palette.blue,
-    },
+  const alertChips = [
+    { title: 'High Risk', count: highRiskCases.toString().padStart(2, '0'), color: palette.red, icon: 'arrow-forward' },
+    { title: 'Pending Review', count: pendingReviews.toString().padStart(2, '0'), color: palette.gold, icon: 'arrow-forward' },
+    { title: 'Deadline Crossed', count: deadlineCrossed.toString().padStart(2, '0'), color: palette.blue, icon: 'arrow-forward' },
   ];
 
   const utilisationTrend = [
@@ -63,25 +48,23 @@ export const OfficerDashboardScreen = () => {
   const utilisationChange = 4.2;
 
   const verificationQueue = [
-    { name: 'Priya Varma', scheme: 'PMEGP', status: 'Docs flagged', wait: '12 hrs' },
-    { name: 'Rahul Singh', scheme: 'Mudra', status: 'Site photo pending', wait: '5 hrs' },
-    { name: 'Asha Devi', scheme: 'Stand Up India', status: 'Video KYC due', wait: '2 hrs' },
-    { name: 'Karan Patel', scheme: 'PM SVANidhi', status: 'Income proof check', wait: '1 hr' },
+    { name: 'Priya Varma', scheme: 'PMEGP', wait: '12 hrs', status: 'Docs uploaded, needs check' },
+    { name: 'Rahul Singh', scheme: 'Mudra', wait: '5 hrs', status: 'Bank statement pending' },
+    { name: 'Asha Devi', scheme: 'Field', wait: '2 hrs', status: 'Field visit scheduled' },
+    { name: 'Karan Patel', scheme: 'Compliance', wait: '1 hr', status: 'Escalation flagged' },
   ];
 
   const quickActionShortcuts = [
     { label: 'Approve Batch', icon: 'checkmark-done-circle', color: palette.green, onPress: () => navigation.navigate('VerificationTasks') },
     { label: 'Request Re-upload', icon: 'cloud-upload-outline', color: palette.gold, onPress: () => navigation.navigate('Reports') },
     { label: 'Schedule Field Visit', icon: 'map-outline', color: palette.blue, onPress: () => navigation.navigate('Reports') },
-    { label: 'Assign Officer', icon: 'people-outline', color: palette.navy, onPress: () => navigation.navigate('Reports') },
-    { label: 'Flag Risk', icon: 'alert-circle-outline', color: palette.red, onPress: () => navigation.navigate('Reports') },
     { label: 'Export Utilisation', icon: 'download-outline', color: palette.slate, onPress: () => navigation.navigate('Reports') },
   ];
 
   const todaysTasks = [
-    { time: '09:30', duration: '15 min', title: 'Verify utilisation photos - Rahman Traders', tag: 'PMEGP', status: 'Awaiting media' },
-    { time: '11:00', duration: '20 min', title: 'Call borrower - Seema Textile', tag: 'Mudra', status: 'Pending phone log' },
-    { time: '14:15', duration: '30 min', title: 'Approve field report - Ward 4', tag: 'Field', status: 'Inspection complete' },
+    { time: '09:30', duration: '15 min', title: 'Verify utilisation photos - Rahman Traders', tag: 'PMEGP', status: 'Pending media upload' },
+    { time: '11:00', duration: '20 min', title: 'Call borrower - Seema Textile', tag: 'Mudra', status: 'Requires manual check' },
+    { time: '14:15', duration: '30 min', title: 'Approve field report - Ward 4', tag: 'Field', status: 'Deadline today' },
     { time: '16:00', duration: '10 min', title: 'Escalate overdue files (3)', tag: 'Compliance', status: 'Deadline today' },
   ];
 
@@ -104,13 +87,19 @@ export const OfficerDashboardScreen = () => {
       >
         <View style={styles.profileStrip}>
           <View style={styles.profileIdentity}>
-            <AppText style={styles.profileName}>{officerName}</AppText>
-            <AppText style={styles.profileMeta}>{region}</AppText>
+            <View style={styles.avatarSmall}>
+              <Ionicons name="person" size={18} color={palette.blue} />
+            </View>
+            <View style={{ flex: 1 }}>
+              <AppText style={styles.profileName}>{officerName}</AppText>
+              <AppText style={styles.profileMeta}>{region}</AppText>
+              <AppText style={styles.profileMeta}>Loan Monitoring — District Intelligence & Tasks</AppText>
+            </View>
           </View>
           <View style={styles.profileBadges}>
-            <View style={styles.profileBadge}>
-              <Ionicons name="shield-checkmark" size={16} color={palette.green} />
-              <AppText style={styles.profileBadgeText}>District</AppText>
+            <View style={[styles.statusPill, { backgroundColor: `${palette.green}18` }]}> 
+              <View style={[styles.statusDot, { backgroundColor: palette.green }]} />
+              <AppText style={[styles.profileBadgeText, { color: palette.green }]}>Active / Online</AppText>
             </View>
             <AppText style={styles.profileId}>{officerId}</AppText>
           </View>
@@ -119,23 +108,18 @@ export const OfficerDashboardScreen = () => {
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
             <AppText style={styles.sectionTitle}>Alerts</AppText>
-            <AppText style={styles.sectionMeta}>AI signal refreshed 5 min ago</AppText>
+            <AppText style={styles.sectionMeta}>Refreshed 5 min ago</AppText>
           </View>
-          <View style={styles.alertRow}>
-            {alertSummaryCards.map((card) => (
-              <View
-                key={card.title}
-                style={[
-                  styles.alertCard,
-                  {
-                    backgroundColor: `${card.tone}15`,
-                    borderColor: `${card.tone}50`,
-                  },
-                ]}
-              >
-                <AppText style={styles.alertTitle}>{card.title}</AppText>
-                <AppText style={[styles.alertCount, { color: card.tone }]}>{card.count}</AppText>
-                <AppText style={styles.alertCaption}>{card.caption}</AppText>
+          <View style={styles.alertChipsRow}>
+            {alertChips.map((chip) => (
+              <View key={chip.title} style={[styles.alertChip, { backgroundColor: `${chip.color}12`, borderColor: `${chip.color}40` }]}> 
+                <AppText style={[styles.alertChipLabel, { color: chip.color }]}>
+                  {chip.title}
+                </AppText>
+                <View style={styles.alertChipRight}>
+                  <AppText style={[styles.alertChipCount, { color: chip.color }]}>{chip.count}</AppText>
+                  <Ionicons name={chip.icon as any} size={14} color={chip.color} />
+                </View>
               </View>
             ))}
           </View>
@@ -353,30 +337,35 @@ const createDashboardStyles = (palette: DashboardPalette) =>
       color: palette.blue,
       fontWeight: '600',
     },
-    alertRow: {
+    alertChipsRow: {
       flexDirection: 'row',
-      gap: 12,
+      gap: 10,
       flexWrap: 'wrap',
     },
-    alertCard: {
-      flex: 1,
-      minWidth: 120,
-      borderRadius: 16,
-      padding: 16,
+    alertChip: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      paddingVertical: 10,
+      paddingHorizontal: 12,
+      borderRadius: 12,
       borderWidth: 1,
+      minWidth: 140,
+      backgroundColor: palette.surface,
     },
-    alertTitle: {
+    alertChipLabel: {
       fontSize: 13,
-      color: palette.slate,
-      fontWeight: '600',
-    },
-    alertCount: {
-      fontSize: 28,
       fontWeight: '700',
-      marginVertical: 6,
+      color: palette.navy,
     },
-    alertCaption: {
-      fontSize: 12,
+    alertChipRight: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 6,
+    },
+    alertChipCount: {
+      fontSize: 16,
+      fontWeight: '700',
       color: palette.navy,
     },
     utilisationCard: {

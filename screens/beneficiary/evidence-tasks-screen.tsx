@@ -66,6 +66,46 @@ function EvidenceTasksScreen() {
       }
     };
 
+      const load = async () => {
+        setLoading(true);
+        try {
+          const primaryKey = beneficiaryId || beneficiaryMobile || '';
+          
+          if (!primaryKey) {
+             setLoading(false);
+             return;
+          }
+
+          const [primaryReq, primarySub] = await Promise.all([
+            evidenceRequirementApi.list(primaryKey).catch(err => {
+                console.error('Failed to load requirements:', JSON.stringify(err, null, 2));
+                return [];
+            }),
+            submissionRepository.listByBeneficiary(primaryKey).catch(err => {
+                console.error('Failed to load submissions:', JSON.stringify(err, null, 2));
+                return [];
+            })
+          ]);
+          
+          if (!active) return;
+          
+          let foundReq = primaryReq;
+          let foundSub = primarySub;
+
+          if (!primaryReq.length && beneficiaryMobile && beneficiaryMobile !== primaryKey) {
+            const fallbackReq = await evidenceRequirementApi.list(beneficiaryMobile).catch(() => []);
+             if (!active) return;
+             if (fallbackReq.length) foundReq = fallbackReq;
+          }
+          setRequirements(foundReq);
+          setSubmissions(foundSub);
+        } catch (err) {
+          console.error('Load evidence tasks failed', err);
+          if (active) Alert.alert('Error', 'Unable to load evidence tasks');
+        } finally {
+          if (active) setLoading(false);
+        }
+      };
     load();
     return () => {
       active = false;

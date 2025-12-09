@@ -49,7 +49,7 @@ export const InputField = ({
   return (
     <View style={[styles.wrapper, containerStyle]}>
       {label ? (
-        <AppText variant="labelMedium" color="muted" style={styles.label}>
+        <AppText variant="labelMedium" color="text" style={styles.label}>
           {label}
         </AppText>
       ) : null}
@@ -59,14 +59,15 @@ export const InputField = ({
           {
             minHeight: theme.components.input.height,
             borderRadius: theme.components.input.borderRadius,
-            paddingHorizontal: theme.spacing.md,
+            paddingHorizontal: theme.spacing.sm,
+            paddingVertical: 10,
             backgroundColor: hasError ? resolvedBg : theme.colors.surface,
             borderWidth: 1,
             borderColor: outlineColor,
           },
         ]}
       >
-        {leftIcon ? <AppIcon name={leftIcon} size={20} color="muted" style={styles.iconPadding} /> : null}
+        {leftIcon ? <AppIcon name={leftIcon} size={18} color="muted" style={styles.iconPadding} /> : null}
         <TextInput
           placeholderTextColor={theme.colors.muted}
           style={[styles.input, { color: theme.colors.text }, inputStyle, style]}
@@ -75,10 +76,10 @@ export const InputField = ({
         />
         {secureToggle ? (
           <TouchableOpacity accessibilityRole="button" onPress={() => setSecure((prev) => !prev)}>
-            <AppIcon name={isSecure ? 'eye-off' : 'eye'} size={20} color="muted" />
+            <AppIcon name={isSecure ? 'eye-off' : 'eye'} size={18} color="muted" />
           </TouchableOpacity>
         ) : null}
-        {!secureToggle && rightIcon ? <AppIcon name={rightIcon} size={20} color="muted" /> : null}
+        {!secureToggle && rightIcon ? <AppIcon name={rightIcon} size={18} color="muted" /> : null}
       </View>
       {hasError ? (
         <AppText variant="labelSmall" color="error" style={styles.helper}>

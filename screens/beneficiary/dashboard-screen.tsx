@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { DrawerActions, useNavigation } from '@react-navigation/native';
 import type { DrawerNavigationProp } from '@react-navigation/drawer';
 import {
@@ -15,7 +15,6 @@ import {
     type ImageResizeMode,
     type ViewStyle,
 } from 'react-native';
-import * as Location from 'expo-location';
 import { useAppLocale, useT } from 'lingo.dev/react';
 
 import { AppIcon } from '@/components/atoms/app-icon';
@@ -29,7 +28,6 @@ import type { BeneficiaryDrawerParamList } from '@/navigation/types';
 import { useTheme } from '@/hooks/use-theme';
 import { useAppTheme } from '@/hooks/use-app-theme';
 import type { AppTheme } from '@/constants/theme';
-import MapView, { Marker, PROVIDER_GOOGLE } from '@/components/react-native-maps-shim';
 
 type BeneficiaryNavigation = DrawerNavigationProp<BeneficiaryDrawerParamList>;
 
@@ -43,13 +41,12 @@ const SUPPORTED_LANGUAGES = [
 type LanguageCode = (typeof SUPPORTED_LANGUAGES)[number]['code'];
 type CalculatorRoute = 'EmiCalculator' | 'SubsidyCalculator' | 'EligibilityPrediction';
 
-type MenuItemKey = 'trackLoan' | 'evidenceTasks' | 'geoCamera' | 'notifications' | 'contactOfficer' | 'myProfile';
+type MenuItemKey = 'trackLoan' | 'uploadEvidence' | 'geoCamera' | 'notifications' | 'contactOfficer' | 'myProfile';
 
 const menuItems: Array<{ key: MenuItemKey; title: string; icon: IconName; color: string; background: string }> = [
     { key: 'trackLoan', title: 'Track Loan', icon: 'clipboard-text-clock-outline', color: '#1D4ED8', background: '#E8F2FF' },
-
-    { key: 'evidenceTasks', title: 'Evidence Tasks', icon: 'clipboard-text-outline', color: '#0EA5E9', background: '#E0F2FE' },
-    { key: 'geoCamera', title: 'Live Map', icon: 'map-outline', color: '#0F766E', background: '#E6FFFA' },
+    { key: 'uploadEvidence', title: 'Upload Evidence', icon: 'cloud-upload-outline', color: '#7C3AED', background: '#F3E8FF' },
+    { key: 'geoCamera', title: 'Geo-Camera', icon: 'camera-marker-outline', color: '#0F766E', background: '#E6FFFA' },
     { key: 'notifications', title: 'Notifications', icon: 'bell-outline', color: '#D97706', background: '#FFF8E1' },
     { key: 'contactOfficer', title: 'Contact Officer', icon: 'card-account-phone-outline', color: '#059669', background: '#E8F9EE' },
     { key: 'myProfile', title: 'My Profile', icon: 'account-circle-outline', color: '#BE185D', background: '#FFE8F2' },
@@ -160,11 +157,6 @@ export const BeneficiaryDashboardScreen = () => {
     const [selectedUpdate, setSelectedUpdate] = useState<GovernmentUpdate | null>(null);
     const [isModalVisible, setIsModalVisible] = useState(false);
     const [languageModalVisible, setLanguageModalVisible] = useState(false);
-    const [mapModalVisible, setMapModalVisible] = useState(false);
-    const [locationLoading, setLocationLoading] = useState(false);
-    const [locationError, setLocationError] = useState<string | null>(null);
-    const [userLocation, setUserLocation] = useState<{ latitude: number; longitude: number } | null>(null);
-    const locationWatcher = useRef<Location.LocationSubscription | null>(null);
 
     const iconColor = theme.colors.icon;
     const iconBackground = theme.colors.surfaceVariant;
@@ -189,84 +181,9 @@ export const BeneficiaryDashboardScreen = () => {
         }
     }, []);
 
-    const fetchCurrentLocation = useCallback(async () => {
-        setLocationLoading(true);
-        setLocationError(null);
-        try {
-            const { status } = await Location.requestForegroundPermissionsAsync();
-            if (status !== 'granted') {
-                setLocationError('Location permission is required to show the live map.');
-                return;
-            }
-
-            const position = await Location.getCurrentPositionAsync({
-                accuracy: Location.Accuracy.Balanced,
-            });
-
-            setUserLocation({ latitude: position.coords.latitude, longitude: position.coords.longitude });
-        } catch (error) {
-            console.error('Location fetch error:', error);
-            setLocationError('Unable to fetch current location. Please try again.');
-        } finally {
-            setLocationLoading(false);
-        }
-    }, []);
-
     useEffect(() => {
         fetchGovernmentUpdates();
     }, [fetchGovernmentUpdates]);
-
-    useEffect(() => {
-        let isActive = true;
-
-        const startWatching = async () => {
-            try {
-                const { status } = await Location.requestForegroundPermissionsAsync();
-                if (status !== 'granted') {
-                    setLocationError('Location permission is required to show the live map.');
-                    return;
-                }
-
-                const subscription = await Location.watchPositionAsync(
-                    {
-                        accuracy: Location.Accuracy.Balanced,
-                        timeInterval: 4000,
-                        distanceInterval: 5,
-                    },
-                    (position) => {
-                        if (!isActive) return;
-                        setUserLocation({ latitude: position.coords.latitude, longitude: position.coords.longitude });
-                    }
-                );
-
-                if (!isActive) {
-                    subscription.remove();
-                    return;
-                }
-
-                locationWatcher.current = subscription;
-            } catch (error) {
-                console.error('Location watcher error:', error);
-                setLocationError('Unable to track location in real time.');
-            }
-        };
-
-        if (mapModalVisible) {
-            fetchCurrentLocation();
-            startWatching();
-        } else if (locationWatcher.current) {
-            locationWatcher.current.remove();
-            locationWatcher.current = null;
-        }
-
-        return () => {
-            isActive = false;
-            if (locationWatcher.current) {
-                locationWatcher.current.remove();
-                locationWatcher.current = null;
-            }
-        };
-    }, [mapModalVisible, fetchCurrentLocation]);
 
     const lastUpdatedLabel = useMemo(() => {
         if (!lastUpdatedAt) return null;
@@ -276,16 +193,6 @@ export const BeneficiaryDashboardScreen = () => {
             minute: '2-digit',
         })}`;
     }, [lastUpdatedAt]);
-
-    const mapRegion = useMemo(
-        () => ({
-            latitude: userLocation?.latitude ?? 28.6139,
-            longitude: userLocation?.longitude ?? 77.209,
-            latitudeDelta: 0.05,
-            longitudeDelta: 0.05,
-        }),
-        [userLocation]
-    );
 
     const formatPublishedAt = useCallback((value?: string) => {
         if (!value) return t('Live policy brief');
@@ -316,14 +223,11 @@ export const BeneficiaryDashboardScreen = () => {
             case 'trackLoan':
                     navigation.navigate('PreviousSubmissions' as never);
                     break;
-
-            case 'evidenceTasks':
-                navigation.navigate('EvidenceTasks' as never);
+            case 'uploadEvidence':
+                    navigation.navigate('UploadEvidence' as never);
                     break;
             case 'geoCamera':
-                    setUserLocation(null);
-                    setLocationError(null);
-                    setMapModalVisible(true);
+                    navigation.navigate('LoanEvidenceCamera' as never);
                     break;
             case 'notifications':
                     navigation.navigate('Notifications' as never);
@@ -495,42 +399,6 @@ export const BeneficiaryDashboardScreen = () => {
 
                 <View style={{ height: 100 }} />
             </ScrollView>
-
-            <Modal visible={mapModalVisible} transparent animationType="slide" onRequestClose={() => setMapModalVisible(false)}>
-                <View style={styles.modalOverlay}>
-                    <View style={styles.mapModalContent}>
-                        <View style={styles.mapModalHeader}>
-                            <AppText style={styles.mapModalTitle}>{t('Live Map View')}</AppText>
-                            <TouchableOpacity onPress={() => setMapModalVisible(false)}>
-                                <AppIcon name="close" size={22} color={theme.colors.icon} />
-                            </TouchableOpacity>
-                        </View>
-
-                        <View style={styles.mapContainerModal}>
-                            <MapView
-                                provider={PROVIDER_GOOGLE}
-                                style={styles.map}
-                                region={mapRegion}
-                                showsUserLocation
-                                showsCompass
-                                loadingEnabled
-                            >
-                                {userLocation ? <Marker coordinate={userLocation} /> : null}
-                            </MapView>
-
-                            <View style={styles.mapStatusRow}>
-                                {locationLoading ? (
-                                    <View style={styles.statusChip}>
-                                        <ActivityIndicator color={theme.colors.primary} size="small" />
-                                        <AppText style={styles.statusChipText}>{t('Fetching your location…')}</AppText>
-                                    </View>
-                                ) : null}
-                                {locationError ? <AppText style={styles.errorText}>{t(locationError)}</AppText> : null}
-                            </View>
-                        </View>
-                    </View>
-                </View>
-            </Modal>
 
             <Modal visible={isModalVisible && Boolean(selectedUpdate)} transparent animationType="slide" onRequestClose={closeModal}>
                 <TouchableWithoutFeedback onPress={closeModal}>
@@ -761,46 +629,6 @@ const createStyles = (theme: AppTheme) =>
             backgroundColor: theme.colors.overlay,
             justifyContent: 'center',
             padding: 24,
-        },
-        mapModalContent: {
-            backgroundColor: theme.colors.surface,
-            borderRadius: 20,
-            padding: 16,
-            gap: 12,
-            borderWidth: StyleSheet.hairlineWidth,
-            borderColor: theme.colors.border,
-        },
-        mapModalHeader: {
-            flexDirection: 'row',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-        },
-        mapModalTitle: {
-            fontSize: 16,
-            fontWeight: '600',
-            color: theme.colors.text,
-        },
-        mapContainerModal: {
-            height: 420,
-            borderRadius: 16,
-            overflow: 'hidden',
-            backgroundColor: theme.colors.surfaceVariant,
-        },
-        map: {
-            flex: 1,
-        },
-        mapStatusRow: {
-            marginTop: 12,
-            gap: 6,
-        },
-        statusChip: {
-            flexDirection: 'row',
-            alignItems: 'center',
-            gap: 8,
-        },
-        statusChipText: {
-            fontSize: 12,
-            color: theme.colors.subtext,
         },
         modalContent: {
             backgroundColor: theme.colors.surface,

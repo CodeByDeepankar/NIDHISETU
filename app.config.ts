@@ -59,7 +59,6 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
       EXPO_PUBLIC_SUPABASE_URL: process.env.EXPO_PUBLIC_SUPABASE_URL,
       EXPO_PUBLIC_SUPABASE_ANON_KEY: process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY,
       EXPO_PUBLIC_SUPABASE_BUCKET: process.env.EXPO_PUBLIC_SUPABASE_BUCKET,
-      GROQ_API_KEY: process.env.EXPO_PUBLIC_GROQ_API_KEY,
     },
   },
   owner: 'deepankar68',

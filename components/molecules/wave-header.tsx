@@ -6,6 +6,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import Svg, { Path } from 'react-native-svg';
 
 import { AppText } from '@/components/atoms/app-text';
+import { useAppTheme } from '@/hooks/use-app-theme';
 
 const { width } = Dimensions.get('window');
 
@@ -18,11 +19,16 @@ interface WaveHeaderProps {
 }
 
 export const WaveHeader = ({ title, subtitle, height, onBack, rightAction }: WaveHeaderProps) => {
+  const theme = useAppTheme();
   return (
     <View style={[styles.headerContainer, height ? { height } : null]}>
       <LinearGradient
         colors={['#008080', '#20B2AA']} // Teal gradient
         style={styles.gradientHeader}
+      />
+      <View
+        pointerEvents="none"
+        style={[styles.waveEdgeMask, { backgroundColor: theme.colors.background }]}
       />
       <View style={styles.waveContainer}>
         <Svg height="100" width={width} viewBox="0 0 1440 320" style={styles.wave}>
@@ -69,6 +75,14 @@ const styles = StyleSheet.create({
   gradientHeader: {
     flex: 1,
     paddingBottom: 40,
+  },
+  waveEdgeMask: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    bottom: 0,
+    height: 24,
+    zIndex: 0,
   },
   waveContainer: {
     position: 'absolute',
