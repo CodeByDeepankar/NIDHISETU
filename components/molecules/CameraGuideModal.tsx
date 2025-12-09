@@ -3,7 +3,7 @@ import { StyleSheet, TouchableOpacity, View } from 'react-native';
 
 import { AppIcon } from '@/components/atoms/app-icon';
 import { AppText } from '@/components/atoms/app-text';
-import DimmedModal from '@/components/ui/dimmed-modal';
+import { DimmedModal } from '@/components/ui/dimmed-modal';
 import { useAppTheme } from '@/hooks/use-app-theme';
 import { useT } from 'lingo.dev/react';
 

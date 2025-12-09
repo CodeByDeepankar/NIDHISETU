@@ -20,7 +20,7 @@ export const EnterPinScreen = ({ navigation, route }: EnterPinScreenProps) => {
   const profile = useAuthStore((state) => state.profile);
   const completeOnboarding = useAuthStore((state) => state.actions.completeOnboarding);
   // Hook helpers for PIN and fingerprint.
-  const { verifyPin, persistFingerprint } = useDeviceFingerprint();
+  const { verifyPin, persistFingerprint, hasPin } = useDeviceFingerprint();
   // PIN text state.
   const [pin, setPin] = useState('');
   // Track failed attempts locally for UI messaging.
@@ -30,9 +30,19 @@ export const EnterPinScreen = ({ navigation, route }: EnterPinScreenProps) => {
   // Optional reason text from navigation.
   const reason = route.params?.reason ?? 'New device detected. Please enter your PIN to continue.';
 
-  // Auto-focus input.
+  // Check if PIN exists on this device.
   useEffect(() => {
-    inputRef.current?.focus();
+    const checkPin = async () => {
+      const exists = await hasPin();
+      if (!exists) {
+        // No PIN found, redirect to SetPin screen
+        navigation.replace('SetPin');
+      } else {
+        // Only focus if PIN exists, otherwise we're navigating away
+        inputRef.current?.focus();
+      }
+    };
+    checkPin();
   }, []);
 
   // Run verification; handle lock and success flows.
@@ -68,29 +78,6 @@ export const EnterPinScreen = ({ navigation, route }: EnterPinScreenProps) => {
     inputRef.current?.focus();
   };
 
-  // Render six boxes indicating entered digits.
-  const renderCircles = () => {
-    return (
-      <View style={styles.circlesRow}>
-        {Array.from({ length: 6 }).map((_, index) => {
-          const filled = index < pin.length;
-          return (
-            <View
-              key={index}
-              style={[
-                styles.circle,
-                {
-                  borderColor: theme.colors.border,
-                  backgroundColor: filled ? theme.colors.primary : 'transparent',
-                },
-              ]}
-            />
-          );
-        })}
-      </View>
-    );
-  };
-
   return (
     <View style={[styles.container, { backgroundColor: theme.colors.background }]}
     >
@@ -100,11 +87,9 @@ export const EnterPinScreen = ({ navigation, route }: EnterPinScreenProps) => {
         PIN stays on your device. If you changed devices, enter your PIN once and we will trust this device next time.
       </AppText>
 
-      {renderCircles()}
-
       <TextInput
         ref={inputRef}
-        style={styles.hiddenInput}
+        style={[styles.pinInput, { borderColor: theme.colors.border }]}
         keyboardType="number-pad"
         secureTextEntry
         maxLength={6}
@@ -156,20 +141,15 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginBottom: 8,
   },
-  circlesRow: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    gap: 12,
-  },
-  circle: {
-    width: 16,
-    height: 16,
-    borderRadius: 8,
+  pinInput: {
+    marginTop: 12,
     borderWidth: 1,
-  },
-  hiddenInput: {
-    opacity: 0,
-    height: 0,
+    borderRadius: 12,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    fontSize: 20,
+    letterSpacing: 4,
+    textAlign: 'center',
   },
   unlockButton: {
     marginTop: 12,

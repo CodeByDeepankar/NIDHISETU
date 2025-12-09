@@ -13,20 +13,21 @@ const ensureLocation = (location?: SubmissionEvidence['location']) => {
 const materializeSubmission = (data: any): SubmissionEvidence => {
   return {
     id: data.id,
-    assetName: data.assetName ?? 'Evidence',
-    mediaType: data.mediaType ?? 'photo',
-    thumbnailUrl: data.thumbnailUrl,
-    mediaUrl: data.mediaUrl,
-    capturedAt: data.capturedAt,
-    submittedAt: data.submittedAt,
+    assetName: data.asset_name ?? 'Evidence',
+    mediaType: data.media_type ?? 'photo',
+    thumbnailUrl: data.thumbnail_url,
+    mediaUrl: data.media_url,
+    capturedAt: data.captured_at,
+    submittedAt: data.submitted_at,
     location: ensureLocation(data.location),
-    deviceDetails: data.deviceDetails,
-    aiAnalysis: data.aiAnalysis,
+    deviceDetails: data.device_details,
+    aiAnalysis: data.ai_analysis,
     remarks: data.remarks,
-    rejectionReason: data.rejectionReason,
+    rejectionReason: data.rejection_reason,
     status: data.status ?? 'pending',
-    isDraft: data.isDraft,
-    offlineId: data.offlineId,
+    isDraft: data.is_draft,
+    offlineId: data.offline_id,
+    requirementId: data.requirement_id,
   };
 };
 
@@ -36,8 +37,8 @@ const listByBeneficiary = async (beneficiaryId: string): Promise<SubmissionEvide
   const { data, error } = await supabase
     .from(COLLECTION_NAME)
     .select('*')
-    .eq('beneficiaryId', beneficiaryId)
-    .order('capturedAt', { ascending: false });
+    .eq('beneficiary_id', beneficiaryId)
+    .order('captured_at', { ascending: false });
 
   if (error) throw error;
   return (data || []).map(materializeSubmission);
@@ -66,7 +67,7 @@ const subscribeToBeneficiarySubmissions = (
         event: '*',
         schema: 'public',
         table: COLLECTION_NAME,
-        filter: `beneficiaryId=eq.${beneficiaryId}`,
+        filter: `beneficiary_id=eq.${beneficiaryId}`,
       },
       () => {
         // Refresh data on any change
@@ -86,21 +87,27 @@ const createSubmission = async (beneficiaryId: string, payload: NewSubmissionPay
   if (!supabase) throw new Error('Supabase not initialized');
 
   const docPayload = {
-    beneficiaryId,
-    assetName: payload.assetName ?? 'Evidence',
-    mediaType: payload.mediaType ?? 'photo',
-    capturedAt: payload.capturedAt ?? new Date().toISOString(),
-    submittedAt: payload.submittedAt ?? new Date().toISOString(),
+    beneficiary_id: beneficiaryId,
+    asset_name: payload.assetName ?? 'Evidence',
+    media_type: payload.mediaType ?? 'photo',
+    captured_at: payload.capturedAt ?? new Date().toISOString(),
+    submitted_at: payload.submittedAt ?? new Date().toISOString(),
     location: ensureLocation(payload.location),
-    deviceDetails: payload.deviceDetails ?? null,
-    aiAnalysis: payload.aiAnalysis ?? null,
+    device_details: payload.deviceDetails ?? null,
+    ai_analysis: payload.aiAnalysis ?? null,
     remarks: payload.remarks ?? null,
-    thumbnailUrl: payload.thumbnailUrl ?? null,
-    mediaUrl: payload.mediaUrl ?? null,
+    thumbnail_url: payload.thumbnailUrl ?? null,
+    media_url: payload.mediaUrl ?? null,
     status: payload.status ?? 'submitted',
+
     isDraft: payload.isDraft ?? false,
     offlineId: payload.offlineId ?? null,
     // requirementId: payload.requirementId ?? null, // Removed as column doesn't exist
+
+    is_draft: payload.isDraft ?? false,
+    offline_id: payload.offlineId ?? null,
+    requirement_id: payload.requirementId ?? null,
+
   };
 
   const { data, error } = await supabase
@@ -133,7 +140,7 @@ const updateStatus = async (id: string, status: string, rejectionReason?: string
 
   const updates: any = { status };
   if (rejectionReason) {
-    updates.rejectionReason = rejectionReason;
+    updates.rejection_reason = rejectionReason;
   }
 
   const { error } = await supabase
@@ -149,10 +156,28 @@ const updateAIAnalysis = async (id: string, aiAnalysis: any): Promise<void> => {
 
   const { error } = await supabase
     .from(COLLECTION_NAME)
-    .update({ aiAnalysis })
+    .update({ ai_analysis: aiAnalysis })
     .eq('id', id);
 
   if (error) throw error;
+};
+
+const listAllPending = async (): Promise<(SubmissionEvidence & { beneficiary?: any })[]> => {
+  if (!supabase) throw new Error('Supabase not initialized');
+
+  const { data, error } = await supabase
+    .from(COLLECTION_NAME)
+    .select('*, beneficiary:beneficiaries(*)')
+    .eq('status', 'submitted')
+    .order('submitted_at', { ascending: true });
+
+  if (error) throw error;
+  
+  return (data || []).map((item: any) => ({
+    ...materializeSubmission(item),
+    beneficiaryId: item.beneficiary_id,
+    beneficiary: item.beneficiary,
+  }));
 };
 
 export const submissionRepository = {
@@ -162,4 +187,5 @@ export const submissionRepository = {
   createSubmissions,
   updateStatus,
   updateAIAnalysis,
+  listAllPending,
 };

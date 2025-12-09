@@ -10,7 +10,9 @@ export type AuthStackParamList = {
 export type BeneficiaryDrawerParamList = {
   BeneficiaryRoot: undefined;
   BeneficiaryDashboard: undefined;
-  UploadEvidence: { requirementId?: string; requirementName?: string } | undefined;
+  Submission: undefined;
+  UploadEvidence: { requirementId?: string; requirementName?: string; startWithLibrary?: boolean } | undefined;
+  EvidenceTasks: undefined;
   PreviousSubmissions: undefined;
   SubmissionDetail: { submission: any };
   BeneficiaryProfile: undefined;
@@ -41,6 +43,7 @@ export type OfficerStackParamList = {
   Support: undefined;
   ActiveSessions: undefined;
   ChangePassword: undefined;
+  InvoiceRequirementForm: { beneficiaryId: string };
 };
 
 export type ReviewerStackParamList = {

@@ -10,11 +10,12 @@ import { DefaultTheme, NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useT } from 'lingo.dev/react';
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { Alert, StyleSheet, TouchableOpacity, View, ViewStyle } from 'react-native';
 
 import { AppIcon } from '@/components/atoms/app-icon';
 import { AppText } from '@/components/atoms/app-text';
+import { CameraGuideModal } from '@/components/molecules/CameraGuideModal';
 import type { AppTheme } from '@/constants/theme';
 import { useAppTheme } from '@/hooks/use-app-theme';
 import { EnterPinScreen } from '@/screens/auth/EnterPinScreen';
@@ -35,6 +36,8 @@ import { NotificationsScreen } from '@/screens/beneficiary/notifications-screen'
 import { PreviousSubmissionsScreen } from '@/screens/beneficiary/previous-submissions-screen';
 import { BeneficiaryProfileScreen } from '@/screens/beneficiary/profile-screen';
 import { SubmissionDetailScreen } from '@/screens/beneficiary/submission-detail-screen';
+import { SubmissionScreen } from '@/screens/beneficiary/submission-screen';
+import { EvidenceTasksScreen } from '@/screens/beneficiary/evidence-tasks-screen';
 import { SubsidyCalculatorScreen } from '@/screens/beneficiary/subsidy-calculator-screen';
 import { SyncStatusScreen } from '@/screens/beneficiary/sync-status-screen';
 import { UploadEvidenceScreen } from '@/screens/beneficiary/upload-evidence-screen';
@@ -51,6 +54,7 @@ import { ReviewerDashboardScreen } from '@/screens/reviewer/dashboard-screen';
 import { ReviewDetailScreen } from '@/screens/reviewer/review-detail-screen';
 import { ReviewerSubmissionListScreen } from '@/screens/reviewer/submission-list-screen';
 import { useAuthStore } from '@/state/authStore';
+import { useCameraGuideStore } from '@/state/cameraGuideStore';
 import type {
     AuthStackParamList,
     BeneficiaryDrawerParamList,
@@ -112,6 +116,8 @@ const AuthNavigator = () => (
 
 const BeneficiaryTabNavigator = () => {
   const theme = useAppTheme();
+  const [tabsHidden, setTabsHidden] = useState(false);
+  const { isVisible, open, proceed } = useCameraGuideStore();
   const tabScreenOptions = useMemo<BottomTabNavigationOptions>(
     () => ({
       headerShown: false,
@@ -135,7 +141,7 @@ const BeneficiaryTabNavigator = () => {
           paddingBottom: 0,
           paddingTop: 0,
         } as ViewStyle,
-        { transform: [{ translateY }] },
+        { transform: [{ translateY: tabsHidden ? 120 : 0 }] },
       ],
       tabBarItemStyle: tabItemStyle,
       tabBarIconStyle: {
@@ -147,40 +153,60 @@ const BeneficiaryTabNavigator = () => {
       tabBarActiveTintColor: theme.mode === 'dark' ? theme.colors.onPrimary : theme.colors.primary,
       tabBarInactiveTintColor: theme.colors.subtext,
     }),
-    [theme, translateY]
+    [tabsHidden, theme]
   );
 
   return (
-    <Tab.Navigator screenOptions={tabScreenOptions}>
-      <Tab.Screen
-        name="Home"
-        component={BeneficiaryDashboardScreen}
-        options={{
-          tabBarIcon: ({ color }) => <AppIcon name="home" size={32} color={color} />,
-        }}
-      />
-      <Tab.Screen
-        name="NIDHIMITRA"
-        component={BeneficiaryLoanAssistantScreen}
-        options={{
-          tabBarIcon: ({ color }) => <AppIcon name="robot" size={32} color={color} />,
-        }}
-      />
-      <Tab.Screen
-        name="UploadEvidence"
-        component={UploadEvidenceScreen}
-        options={{
-          tabBarIcon: ({ color }) => <AppIcon name="hand-coin" size={32} color={color} />,
-        }}
-      />
-      <Tab.Screen
-        name="Profile"
-        component={BeneficiaryProfileScreen}
-        options={{
-          tabBarIcon: ({ color }) => <AppIcon name="chart-pie" size={32} color={color} />,
-        }}
-      />
-    </Tab.Navigator>
+    <View style={{ flex: 1 }}>
+      <Tab.Navigator screenOptions={tabScreenOptions}>
+        <Tab.Screen
+          name="Home"
+          component={BeneficiaryDashboardScreen}
+          options={{
+            tabBarIcon: ({ color }) => <AppIcon name="home" size={32} color={color} />,
+          }}
+        />
+        <Tab.Screen
+          name="NIDHIMITRA"
+          component={BeneficiaryLoanAssistantScreen}
+          options={{
+            tabBarIcon: ({ color }) => <AppIcon name="robot" size={32} color={color} />,
+          }}
+        />
+        <Tab.Screen
+          name="UploadEvidence"
+          component={UploadEvidenceScreen}
+          options={{
+            tabBarIcon: ({ color }) => <AppIcon name="hand-coin" size={32} color={color} />,
+          }}
+          listeners={({ navigation }) => ({
+            tabPress: (e) => {
+              e.preventDefault();
+              open(() => navigation.navigate('UploadEvidence'));
+            },
+          })}
+        />
+        <Tab.Screen
+          name="Profile"
+          component={BeneficiaryProfileScreen}
+          options={{
+            tabBarIcon: ({ color }) => <AppIcon name="chart-pie" size={32} color={color} />,
+          }}
+        />
+      </Tab.Navigator>
+
+      <View style={tabToggleStyles.button}>
+        <TouchableOpacity
+          style={tabToggleStyles.touch}
+          onPress={() => setTabsHidden((prev) => !prev)}
+          accessibilityLabel={tabsHidden ? 'Show navigation bar' : 'Hide navigation bar'}
+        >
+          <AppIcon name={tabsHidden ? 'chevron-up' : 'chevron-down'} size={18} color="#111827" />
+        </TouchableOpacity>
+      </View>
+
+      <CameraGuideModal visible={isVisible} onClose={proceed} onContinue={proceed} />
+    </View>
   );
 };
 
@@ -307,6 +333,8 @@ const BeneficiaryNavigator = () => {
   return (
     <BeneficiaryStack.Navigator screenOptions={{ headerShown: false }}>
       <BeneficiaryStack.Screen name="BeneficiaryRoot" component={BeneficiaryDrawerNavigator} />
+      <BeneficiaryStack.Screen name="Submission" component={SubmissionScreen} />
+      <BeneficiaryStack.Screen name="EvidenceTasks" component={EvidenceTasksScreen} />
       <BeneficiaryStack.Screen name="SubmissionDetail" component={SubmissionDetailScreen} />
       <BeneficiaryStack.Screen name="LoanEvidenceCamera" component={LoanEvidenceCameraScreen} />
       <BeneficiaryStack.Screen name="EditProfile" component={EditProfileScreen} />
@@ -315,6 +343,7 @@ const BeneficiaryNavigator = () => {
       <BeneficiaryStack.Screen name="EligibilityPrediction" component={EligibilityPredictionScreen} />
       <BeneficiaryStack.Screen name="Notifications" component={NotificationsScreen} />
       <BeneficiaryStack.Screen name="ContactOfficer" component={ContactOfficerScreen} />
+      <BeneficiaryStack.Screen name="UploadEvidence" component={UploadEvidenceScreen} />
     </BeneficiaryStack.Navigator>
   );
 };
@@ -408,6 +437,10 @@ const OfficerNavigator = () => {
       <OfficerStack.Screen name="OfficerSubmissionDetail" component={OfficerSubmissionDetailScreen} />
       <OfficerStack.Screen name="ActiveSessions" component={ActiveSessionsScreen} />
       <OfficerStack.Screen name="ChangePassword" component={ChangePasswordScreen} />
+      <OfficerStack.Screen 
+        name="InvoiceRequirementForm" 
+        component={require('@/screens/officer/invoice-requirement-form-screen').InvoiceRequirementFormScreen} 
+      />
     </OfficerStack.Navigator>
   );
 };

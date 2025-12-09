@@ -14,6 +14,15 @@ export type EvidenceRequirementRecord = {
   image_quality?: 'best' | 'good' | 'low';
   status?: 'required' | 'pending' | 'submitted';
   created_at?: string;
+  // Invoice Requirement Specific Fields
+  type?: string;
+  document_name?: string;
+  invoice_type?: string;
+  required_fields?: string[];
+  fraud_checks?: string[];
+  model_or_id?: string;
+  officer_id?: string;
+  file_upload_enabled?: boolean;
 };
 
 const TABLE = 'evidence_requirements';

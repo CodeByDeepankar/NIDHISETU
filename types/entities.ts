@@ -54,6 +54,7 @@ export interface SubmissionEvidence {
   status: SubmissionStatus;
   isDraft?: boolean;
   offlineId?: string;
+  requirementId?: string;
 }
 
 export type NewSubmissionPayload = Omit<SubmissionEvidence, 'id' | 'status'> & {

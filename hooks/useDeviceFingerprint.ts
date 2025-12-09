@@ -130,11 +130,17 @@ export const useDeviceFingerprint = () => {
     return fingerprint;
   }, []);
 
+    const hasPin = useCallback(async () => {
+    const hash = await getStoredPinHash();
+    return Boolean(hash);
+  }, []);
+
   return {
     getFingerprint,
     savePin,
     verifyPin,
     evaluateFingerprintTrust,
     persistFingerprint,
+    hasPin,
   };
 };
