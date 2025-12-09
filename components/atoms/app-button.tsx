@@ -63,12 +63,11 @@ export const AppButton = ({
         borderColor,
         opacity: pressed ? 0.88 : 1,
         borderWidth: variant === 'outline' ? 1 : 0,
-        transform: [{ scale: pressed ? 0.92 : 1 }],
-        shadowColor: theme.colors.primary,
-        shadowOpacity: variant === 'primary' ? 0.15 : 0,
-        shadowOffset: { width: 0, height: variant === 'primary' ? 6 : 0 },
-        shadowRadius: variant === 'primary' ? 12 : 0,
-        elevation: variant === 'primary' ? theme.elevations.fab.elevation : 0,
+        shadowColor: '#000',
+        shadowOpacity: variant === 'primary' ? 0.08 : 0,
+        shadowOffset: { width: 0, height: variant === 'primary' ? 3 : 0 },
+        shadowRadius: variant === 'primary' ? 6 : 0,
+        elevation: variant === 'primary' ? 2 : 0,
       },
       incomingStyle,
     ];
@@ -107,6 +106,8 @@ export const AppButton = ({
 const styles = StyleSheet.create({
   base: {
     justifyContent: 'center',
+    alignItems: 'center',
+    alignSelf: 'stretch',
   },
   contentRow: {
     flexDirection: 'row',

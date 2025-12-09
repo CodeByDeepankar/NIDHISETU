@@ -5,6 +5,7 @@ import type { IconName } from '@/components/atoms/app-icon';
 import { AppIcon } from '@/components/atoms/app-icon';
 import { AppText } from '@/components/atoms/app-text';
 import { WaveHeader } from '@/components/molecules/wave-header';
+import MapView, { Marker, PROVIDER_GOOGLE } from '@/components/react-native-maps-shim';
 import type { ColorToken } from '@/constants/theme';
 import { useAppTheme } from '@/hooks/use-app-theme';
 import { Pressable, ScrollView, StyleSheet, View, useWindowDimensions } from 'react-native';
@@ -561,6 +562,27 @@ const activityLogEntries = [
   },
 ];
 
+type LatLng = { latitude: number; longitude: number };
+type GeoPoint = LatLng & { label: string; subtitle: string; color: string };
+type GeoVerificationSnapshot = { evidence: GeoPoint; project: GeoPoint };
+
+const geoVerificationSnapshot: GeoVerificationSnapshot = {
+  evidence: {
+    label: 'Evidence Upload Ping',
+    subtitle: 'Captured near Saki Naka, 12:42 PM',
+    latitude: 19.1106,
+    longitude: 72.8697,
+    color: '#2563EB',
+  },
+  project: {
+    label: 'Sanctioned Project Site',
+    subtitle: 'Registered plot, Andheri MIDC',
+    latitude: 19.1541,
+    longitude: 72.8603,
+    color: '#10B981',
+  },
+};
+
 const RiskScoringCard = () => {
   const theme = useAppTheme();
   const { width } = useWindowDimensions();
@@ -709,8 +731,113 @@ const RiskScoringCard = () => {
           })}
         </View>
       </View>
+
+      <GeoVerificationMap />
     </View>
   );
+};
+
+const GeoVerificationMap = () => {
+  const theme = useAppTheme();
+  const { evidence, project } = geoVerificationSnapshot;
+  const distanceKm = calculateDistanceKm(evidence, project);
+  const region = buildRegionForPoints(evidence, project);
+
+  return (
+    <View style={[styles.geoCard, { backgroundColor: theme.colors.surfaceVariant }]}>
+      <View style={styles.geoHeaderRow}>
+        <View>
+          <AppText variant="titleSmall" color="text" weight="600">
+            Live Geo-Verification
+          </AppText>
+          <AppText variant="bodySmall" color="muted">
+            Comparing evidence ping vs sanctioned project site
+          </AppText>
+        </View>
+        <View style={[styles.distancePill, { backgroundColor: theme.colors.surface }]}> 
+          <AppIcon name="map-marker-distance" size={16} color={theme.colors.primary} />
+          <AppText variant="labelMedium" color="text" weight="600">
+            {distanceKm.toFixed(2)} km apart
+          </AppText>
+        </View>
+      </View>
+
+      <View style={styles.mapWrapper}>
+        <MapView
+          provider={PROVIDER_GOOGLE}
+          style={styles.map}
+          initialRegion={region}
+        >
+          <Marker
+            coordinate={project}
+            title={project.label}
+            description={project.subtitle}
+            pinColor={project.color}
+          />
+          <Marker
+            coordinate={evidence}
+            title={evidence.label}
+            description={evidence.subtitle}
+            pinColor={evidence.color}
+          />
+        </MapView>
+        <View style={[styles.mapBadge, { backgroundColor: `${theme.colors.background}CC` }]}> 
+          <AppIcon name="crosshairs-gps" size={14} color={theme.colors.primary} />
+          <AppText variant="labelSmall" color="text">
+            Live location checks
+          </AppText>
+        </View>
+      </View>
+
+      <View style={styles.geoLegendRow}>
+        {[project, evidence].map((point) => (
+          <View key={point.label} style={styles.geoLegendItem}>
+            <View style={[styles.geoLegendDot, { backgroundColor: point.color }]} />
+            <View style={{ flex: 1 }}>
+              <AppText variant="labelMedium" color="text" weight="600">
+                {point.label}
+              </AppText>
+              <AppText variant="bodySmall" color="muted">
+                {point.subtitle}
+              </AppText>
+            </View>
+          </View>
+        ))}
+      </View>
+      <AppText variant="bodySmall" color="muted">
+        Distance difference indicates how far the upload location drifted from the sanctioned coordinates.
+      </AppText>
+    </View>
+  );
+};
+
+const EARTH_RADIUS_KM = 6371;
+const toRad = (value: number) => (value * Math.PI) / 180;
+
+const calculateDistanceKm = (pointA: LatLng, pointB: LatLng) => {
+  const dLat = toRad(pointB.latitude - pointA.latitude);
+  const dLon = toRad(pointB.longitude - pointA.longitude);
+  const lat1 = toRad(pointA.latitude);
+  const lat2 = toRad(pointB.latitude);
+
+  const haversine =
+    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos(lat1) * Math.cos(lat2) * Math.sin(dLon / 2) * Math.sin(dLon / 2);
+  const c = 2 * Math.atan2(Math.sqrt(haversine), Math.sqrt(1 - haversine));
+  return EARTH_RADIUS_KM * c;
+};
+
+const buildRegionForPoints = (pointA: LatLng, pointB: LatLng) => {
+  const latitude = (pointA.latitude + pointB.latitude) / 2;
+  const longitude = (pointA.longitude + pointB.longitude) / 2;
+  const latitudeDelta = Math.max(Math.abs(pointA.latitude - pointB.latitude) * 2, 0.02);
+  const longitudeDelta = Math.max(Math.abs(pointA.longitude - pointB.longitude) * 2, 0.02);
+  return {
+    latitude,
+    longitude,
+    latitudeDelta,
+    longitudeDelta,
+  };
 };
 
 const styles = StyleSheet.create({
@@ -928,6 +1055,63 @@ const styles = StyleSheet.create({
     padding: 12,
     borderRadius: 16,
     gap: 12,
+  },
+  geoCard: {
+    marginTop: 16,
+    borderRadius: 16,
+    padding: 12,
+    gap: 12,
+  },
+  geoHeaderRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    gap: 12,
+  },
+  distancePill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    borderRadius: 999,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+  },
+  mapWrapper: {
+    borderRadius: 16,
+    overflow: 'hidden',
+    height: 220,
+    position: 'relative',
+  },
+  map: {
+    flex: 1,
+  },
+  mapBadge: {
+    position: 'absolute',
+    top: 12,
+    left: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 999,
+  },
+  geoLegendRow: {
+    flexDirection: 'row',
+    gap: 12,
+    flexWrap: 'wrap',
+  },
+  geoLegendItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    flex: 1,
+    minWidth: 140,
+  },
+  geoLegendDot: {
+    width: 10,
+    height: 10,
+    borderRadius: 5,
   },
   docCard: {
     borderRadius: 14,

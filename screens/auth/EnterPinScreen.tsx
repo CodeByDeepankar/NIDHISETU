@@ -68,6 +68,29 @@ export const EnterPinScreen = ({ navigation, route }: EnterPinScreenProps) => {
     inputRef.current?.focus();
   };
 
+  // Render six boxes indicating entered digits.
+  const renderCircles = () => {
+    return (
+      <View style={styles.circlesRow}>
+        {Array.from({ length: 6 }).map((_, index) => {
+          const filled = index < pin.length;
+          return (
+            <View
+              key={index}
+              style={[
+                styles.circle,
+                {
+                  borderColor: theme.colors.border,
+                  backgroundColor: filled ? theme.colors.primary : 'transparent',
+                },
+              ]}
+            />
+          );
+        })}
+      </View>
+    );
+  };
+
   return (
     <View style={[styles.container, { backgroundColor: theme.colors.background }]}
     >
@@ -77,9 +100,11 @@ export const EnterPinScreen = ({ navigation, route }: EnterPinScreenProps) => {
         PIN stays on your device. If you changed devices, enter your PIN once and we will trust this device next time.
       </AppText>
 
+      {renderCircles()}
+
       <TextInput
         ref={inputRef}
-        style={[styles.pinInput, { borderColor: theme.colors.border }]}
+        style={styles.hiddenInput}
         keyboardType="number-pad"
         secureTextEntry
         maxLength={6}
@@ -131,15 +156,20 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginBottom: 8,
   },
-  pinInput: {
-    marginTop: 12,
+  circlesRow: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    gap: 12,
+  },
+  circle: {
+    width: 16,
+    height: 16,
+    borderRadius: 8,
     borderWidth: 1,
-    borderRadius: 12,
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    fontSize: 20,
-    letterSpacing: 4,
-    textAlign: 'center',
+  },
+  hiddenInput: {
+    opacity: 0,
+    height: 0,
   },
   unlockButton: {
     marginTop: 12,

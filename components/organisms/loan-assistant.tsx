@@ -1,6 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { ActivityIndicator, KeyboardAvoidingView, Platform, ScrollView, StyleProp, StyleSheet, View, ViewStyle } from 'react-native';
-import Markdown from 'react-native-markdown-display';
 
 import { AppButton } from '@/components/atoms/app-button';
 import { AppText } from '@/components/atoms/app-text';
@@ -110,13 +109,9 @@ export const LoanAssistantPanel = ({ beneficiaryName, loanAmount, bankName, vari
                 style={[styles.bubble, isAssistant ? styles.assistantBubble : styles.userBubble, bubbleColors]}
                 accessibilityLabel={`${message.role} message`}
               >
-                {isAssistant ? (
-                  <Markdown style={markdownStyles(theme)}>{message.content}</Markdown>
-                ) : (
-                  <AppText variant="bodyMedium" color="text">
-                    {message.content}
-                  </AppText>
-                )}
+                <AppText variant="bodyMedium" color="text">
+                  {message.content}
+                </AppText>
               </View>
             );
           })}
@@ -194,52 +189,5 @@ const styles = StyleSheet.create({
   },
   userBubble: {
     alignSelf: 'flex-end',
-  },
-});
-
-const markdownStyles = (theme: ReturnType<typeof useAppTheme>) => ({
-  body: {
-    color: theme.colors.text,
-    fontSize: 14,
-    lineHeight: 20,
-  },
-  paragraph: {
-    marginTop: 4,
-    marginBottom: 4,
-  },
-  bullet_list: {
-    marginTop: 4,
-    marginBottom: 4,
-  },
-  ordered_list: {
-    marginTop: 4,
-    marginBottom: 4,
-  },
-  list_item: {
-    flexDirection: 'row',
-    justifyContent: 'flex-start',
-  },
-  bullet_list_icon: {
-    color: theme.colors.text,
-  },
-  ordered_list_icon: {
-    color: theme.colors.text,
-  },
-  code_inline: {
-    backgroundColor: theme.colors.surface,
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    borderRadius: 6,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: theme.colors.border,
-    fontFamily: 'monospace',
-  },
-  code_block: {
-    backgroundColor: theme.colors.surface,
-    padding: 8,
-    borderRadius: 8,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: theme.colors.border,
-    fontFamily: 'monospace',
   },
 });

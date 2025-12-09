@@ -120,6 +120,7 @@
   "Syncing": "Syncing",
   "Retry Pending": "Retry Pending",
   "Submitted": "Submitted",
+  "Pending": "Pending",
   "EMI Calculator": "EMI Calculator",
   "Loan Amount (₹)": "Loan Amount (₹)",
   "Enter amount": "Enter amount",
@@ -178,11 +179,5 @@
   "eligibility.rec.improve-score": "Improve credit score above 700 for smoother approvals.",
   "eligibility.rec.boost-revenue": "Show higher monthly sales or reduce loan request.",
   "eligibility.rec.noc": "Carry latest NOC or repayment statements for other loans.",
-  "eligibility.rec.vintage": "Share mentor/UBA letters to offset low business vintage.",
-  "camera.guide.title": "📸 Camera Guide",
-  "camera.guide.bullet1": "Ensure the picture is clear and non-blurry. Hold your phone steady while taking the shot.",
-  "camera.guide.bullet2": "Take the photo in good lighting. Avoid shadows or dark areas—natural light works best.",
-  "camera.guide.bullet3": "Capture the full asset without cropping. Make sure the entire machinery/equipment is visible.",
-  "camera.guide.bullet4": "Avoid obstructions. Remove hands, tools, or anything blocking the asset.",
-  "Continue": "Continue"
+  "eligibility.rec.vintage": "Share mentor/UBA letters to offset low business vintage."
 }
