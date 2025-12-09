@@ -36,36 +36,6 @@ function EvidenceTasksScreen() {
     if (!beneficiaryId && !beneficiaryMobile) return;
     let active = true;
 
-    const load = async () => {
-      setLoading(true);
-      try {
-        const primaryKey = beneficiaryId || beneficiaryMobile || "";
-        const [primaryReq, primarySub] = await Promise.all([
-          primaryKey ? evidenceRequirementApi.list(primaryKey) : [],
-          primaryKey ? submissionRepository.listByBeneficiary(primaryKey) : [],
-        ]);
-
-        if (!active) return;
-
-        let foundReq = primaryReq;
-        let foundSub = primarySub;
-
-        if (!primaryReq.length && beneficiaryMobile && beneficiaryMobile !== primaryKey) {
-          const fallbackReq = await evidenceRequirementApi.list(beneficiaryMobile);
-          if (!active) return;
-          foundReq = fallbackReq;
-        }
-
-        setRequirements(foundReq);
-        setSubmissions(foundSub);
-      } catch (err) {
-        console.error("Load evidence tasks failed", err);
-        if (active) Alert.alert("Error", "Unable to load evidence tasks");
-      } finally {
-        if (active) setLoading(false);
-      }
-    };
-
       const load = async () => {
         setLoading(true);
         try {
@@ -106,7 +76,8 @@ function EvidenceTasksScreen() {
           if (active) setLoading(false);
         }
       };
-    load();
+
+      load();
     return () => {
       active = false;
     };
@@ -154,7 +125,7 @@ function EvidenceTasksScreen() {
   };
 
   const renderCard = (req: EvidenceRequirementRecord) => {
-    const submission = submissions.find((s) => s.requirementId === req.id);
+    const submission = submissions.find((s: SubmissionEvidence) => s.requirementId === req.id);
     const bullets = [
       `Camera: ${req.permissions?.camera === false ? "Disabled" : "Allowed"}`,
       `Files: ${req.permissions?.fileUpload === false ? "Disabled" : "Allowed"}`,
@@ -213,64 +184,7 @@ function EvidenceTasksScreen() {
         ) : requirements.length === 0 ? (
           <Text style={styles.emptyText}>No evidence tasks available.</Text>
         ) : (
-          requirements.map((req) => {
-            const submission = submissions.find(s => s.requirementId === req.id);
-            return (
-            <TouchableOpacity 
-              key={req.id} 
-              style={[styles.card, { borderColor: theme.colors.border }]}
-              disabled={req.status !== 'submitted' || !submission}
-              onPress={() => {
-                if (submission) {
-                  navigation.navigate('SubmissionDetail', { submission });
-                }
-              }}
-              activeOpacity={0.7}
-            > 
-              <View style={styles.cardHeader}>
-                <AppIcon name="clipboard-text-outline" size={20} color={theme.colors.secondary} />
-                <View style={{ flex: 1 }}>
-                  <AppText variant="titleSmall" color="text">{req.label}</AppText>
-                  {req.instructions ? (
-                    <AppText variant="labelSmall" color="muted" numberOfLines={2}>{req.instructions}</AppText>
-                  ) : null}
-                  <View style={styles.metaRow}>
-                    <AppText variant="labelSmall" color="muted">Camera: {req.permissions?.camera === false ? 'Disabled' : 'Allowed'}</AppText>
-                    <AppText variant="labelSmall" color="muted">Files: {req.permissions?.fileUpload === false ? 'Disabled' : 'Allowed'}</AppText>
-                  </View>
-                  <View style={styles.metaRow}>
-                    {req.response_type ? (
-                      <AppText variant="labelSmall" color="muted">Type: {req.response_type}</AppText>
-                    ) : null}
-                    {req.model ? (
-                      <AppText variant="labelSmall" color="muted">Model: {req.model}</AppText>
-                    ) : null}
-                    {req.image_quality ? (
-                      <AppText variant="labelSmall" color="muted">Quality: {req.image_quality}</AppText>
-                    ) : null}
-                  </View>
-                </View>
-              </View>
-              {submission || req.status === 'submitted' ? (
-                <AppButton
-                  label="Pending for Review"
-                  tone="secondary"
-                  icon="clock-check-outline"
-                  disabled
-                  style={styles.uploadButton}
-                />
-              ) : (
-                <AppButton
-                  label="Upload"
-                  tone="secondary"
-                  icon="cloud-upload-outline"
-                  onPress={() => handleUploadPress(req)}
-                  style={styles.uploadButton}
-                />
-              )}
-            </TouchableOpacity>
-            );
-          })
+          requirements.map(renderCard)
         )}
       </ScrollView>
     </View>

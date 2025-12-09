@@ -42,6 +42,7 @@ export type OfficerStackParamList = {
   Support: undefined;
   ActiveSessions: undefined;
   ChangePassword: undefined;
+  InvoiceRequirementForm: { beneficiaryId: string };
 };
 
 export type ReviewerStackParamList = {

@@ -20,7 +20,7 @@ export const EnterPinScreen = ({ navigation, route }: EnterPinScreenProps) => {
   const profile = useAuthStore((state) => state.profile);
   const completeOnboarding = useAuthStore((state) => state.actions.completeOnboarding);
   // Hook helpers for PIN and fingerprint.
-  const { verifyPin, persistFingerprint } = useDeviceFingerprint();
+  const { verifyPin, persistFingerprint, hasPin } = useDeviceFingerprint();
   // PIN text state.
   const [pin, setPin] = useState('');
   // Track failed attempts locally for UI messaging.
@@ -30,9 +30,19 @@ export const EnterPinScreen = ({ navigation, route }: EnterPinScreenProps) => {
   // Optional reason text from navigation.
   const reason = route.params?.reason ?? 'New device detected. Please enter your PIN to continue.';
 
-  // Auto-focus input.
+  // Check if PIN exists on this device.
   useEffect(() => {
-    inputRef.current?.focus();
+    const checkPin = async () => {
+      const exists = await hasPin();
+      if (!exists) {
+        // No PIN found, redirect to SetPin screen
+        navigation.replace('SetPin');
+      } else {
+        // Only focus if PIN exists, otherwise we're navigating away
+        inputRef.current?.focus();
+      }
+    };
+    checkPin();
   }, []);
 
   // Run verification; handle lock and success flows.

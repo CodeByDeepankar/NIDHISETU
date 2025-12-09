@@ -35,6 +35,7 @@ const toDbPayload = (payload: BeneficiaryFormPayload & { id: string; metadata: B
 
 const fromDbRecord = (record: any): BeneficiaryRecord => ({
   id: record.id,
+  createdAt: record.created_at,
   fullName: record.full_name,
   aadhaar: record.aadhaar,
   address: record.address,

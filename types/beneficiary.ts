@@ -82,6 +82,9 @@ export interface BeneficiaryNoteEntry {
 }
 
 export interface BeneficiaryMetadata {
+  lastSynced: any;
+  loanAmount: number;
+  loanId: string | undefined;
   beneficiaryUid: string;
   createdAt: string;
   updatedAt: string;
@@ -97,6 +100,7 @@ export interface BeneficiaryMetadata {
 
 export interface BeneficiaryRecord extends BeneficiaryFormPayload {
   id: string;
+  createdAt?: string;
   metadata: BeneficiaryMetadata;
 }
 

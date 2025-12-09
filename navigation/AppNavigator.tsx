@@ -430,6 +430,10 @@ const OfficerNavigator = () => {
       <OfficerStack.Screen name="OfficerSubmissionDetail" component={OfficerSubmissionDetailScreen} />
       <OfficerStack.Screen name="ActiveSessions" component={ActiveSessionsScreen} />
       <OfficerStack.Screen name="ChangePassword" component={ChangePasswordScreen} />
+      <OfficerStack.Screen 
+        name="InvoiceRequirementForm" 
+        component={require('@/screens/officer/invoice-requirement-form-screen').InvoiceRequirementFormScreen} 
+      />
     </OfficerStack.Navigator>
   );
 };
