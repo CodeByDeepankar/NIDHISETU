@@ -99,9 +99,15 @@ const createSubmission = async (beneficiaryId: string, payload: NewSubmissionPay
     thumbnail_url: payload.thumbnailUrl ?? null,
     media_url: payload.mediaUrl ?? null,
     status: payload.status ?? 'submitted',
+
+    isDraft: payload.isDraft ?? false,
+    offlineId: payload.offlineId ?? null,
+    // requirementId: payload.requirementId ?? null, // Removed as column doesn't exist
+
     is_draft: payload.isDraft ?? false,
     offline_id: payload.offlineId ?? null,
     requirement_id: payload.requirementId ?? null,
+
   };
 
   const { data, error } = await supabase

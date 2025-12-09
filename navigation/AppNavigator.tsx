@@ -49,6 +49,7 @@ import { OfficerDashboardScreen } from '@/screens/officer/dashboard-screen';
 import { OfficerSubmissionDetailScreen } from '@/screens/officer/officer-submission-detail-screen';
 import { VerificationDetailScreen } from '@/screens/officer/verification-detail-screen';
 import { VerificationTasksScreen } from '@/screens/officer/verification-tasks-screen';
+import { ZonesScreen } from '@/screens/officer/zones-screen';
 import { ReviewerDashboardScreen } from '@/screens/reviewer/dashboard-screen';
 import { ReviewDetailScreen } from '@/screens/reviewer/review-detail-screen';
 import { ReviewerSubmissionListScreen } from '@/screens/reviewer/submission-list-screen';
@@ -352,6 +353,7 @@ const officerIconMap = {
   Beneficiaries: 'account-group',
   BeneficiaryForm: 'account-plus',
   VerificationTasks: 'playlist-check',
+  Zones: 'map-marker',
   Reports: 'chart-box',
   Notifications: 'bell',
   Settings: 'cog',
@@ -397,6 +399,11 @@ const OfficerDrawerNavigator = () => {
         name="VerificationTasks"
         component={VerificationTasksScreen}
         options={{ title: 'Verification Tasks' }}
+      />
+      <OfficerDrawer.Screen
+        name="Zones"
+        component={ZonesScreen}
+        options={{ title: 'Zones' }}
       />
       <OfficerDrawer.Screen
         name="Reports"

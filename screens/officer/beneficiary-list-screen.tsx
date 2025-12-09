@@ -18,9 +18,14 @@ import { AppButton, AppText, Chip, InputField } from '@/components/atoms';
 import { WaveHeader } from '@/components/molecules/wave-header';
 import { useAppTheme } from '@/hooks/use-app-theme';
 import { useOfficerBeneficiaries } from '@/hooks/use-officer-beneficiaries';
+import { submissionRepository } from '@/services/api/submissionRepository';
 import type { BeneficiaryMetadata, BeneficiaryRecord } from '@/types/beneficiary';
+
+import type { BeneficiaryLoan, SubmissionEvidence } from '@/types/entities';
+
 import type { BeneficiaryLoan } from '@/types/entities';
 import { evidenceRequirementApi, type EvidenceRequirementRecord } from '@/services/api/evidenceRequirements';
+
 
 const FILTER_OPTIONS = ['All', 'Pending', 'Approved', 'Rejected', 'High Priority'] as const;
 type FilterOption = (typeof FILTER_OPTIONS)[number];
@@ -68,27 +73,18 @@ const IMAGE_QUALITY_LABELS: Record<ImageQuality, string> = {
   low: 'Low',
 };
 
+const HIGH_PRIORITY_LOAN_IDS = new Set(['9981345206']);
+
 const FALLBACK_BENEFICIARIES: BeneficiaryLoan[] = [
   {
     id: 'demo-1',
-    loanId: 'LN-0002',
+    loanId: '9861510432',
     name: 'Swastik Kumar Purohit',
     mobile: '+91 98234 56789',
-    bank: 'Panjab',
+    bank: 'Punjab Bank',
     scheme: 'PMEGP',
     loanAmount: 308568,
     sanctionDate: '2025-11-18',
-    status: 'sanctioned',
-  },
-  {
-    id: 'demo-2',
-    loanId: 'LN-0001',
-    name: 'Deepankar Sahoo',
-    mobile: '+91 98760 11223',
-    bank: 'UCO',
-    scheme: 'Stand-Up India',
-    loanAmount: 2500080,
-    sanctionDate: '2025-11-05',
     status: 'sanctioned',
   },
   {
@@ -100,6 +96,50 @@ const FALLBACK_BENEFICIARIES: BeneficiaryLoan[] = [
     scheme: 'Mudra',
     loanAmount: 512000,
     sanctionDate: '2025-10-22',
+    status: 'pending',
+  },
+  {
+    id: 'demo-4',
+    loanId: '7345129081',
+    name: 'Aarav Mishra',
+    mobile: '+91 98111 22334',
+    bank: 'Bank of Baroda',
+    scheme: 'PMEGP',
+    loanAmount: 450000,
+    sanctionDate: '2025-11-20',
+    status: 'pending',
+  },
+  {
+    id: 'demo-5',
+    loanId: '9034572211',
+    name: 'Sonal Tiwari',
+    mobile: '+91 97777 88990',
+    bank: 'SBI',
+    scheme: 'Mudra',
+    loanAmount: 520000,
+    sanctionDate: '2025-10-30',
+    status: 'disbursed',
+  },
+  {
+    id: 'demo-6',
+    loanId: '8023114455',
+    name: 'Rahul Patra',
+    mobile: '+91 97555 66778',
+    bank: 'ICICI',
+    scheme: 'Stand-Up India',
+    loanAmount: 980000,
+    sanctionDate: '2025-09-18',
+    status: 'closed',
+  },
+  {
+    id: 'demo-7',
+    loanId: '9981345206',
+    name: 'Manaswini Patro',
+    mobile: '+91 98989 11223',
+    bank: 'Canara Bank',
+    scheme: 'PMEGP',
+    loanAmount: 760000,
+    sanctionDate: '2025-11-10',
     status: 'pending',
   },
 ];
@@ -119,6 +159,77 @@ const withAlpha = (color: string, alpha: number) => {
 };
 
 const formatAmount = (value: number) => `₹${value.toLocaleString('en-IN')}`;
+
+const useBeneficiaryUploads = (beneficiaryId?: string) => {
+  const [uploads, setUploads] = useState<SubmissionEvidence[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string>();
+
+  useEffect(() => {
+    let cancelled = false;
+    if (!beneficiaryId || beneficiaryId.startsWith('demo-')) {
+      setUploads([]);
+      setIsLoading(false);
+      setError(undefined);
+      return () => {
+        cancelled = true;
+      };
+    }
+
+    const load = async () => {
+      setIsLoading(true);
+      try {
+        const results = await submissionRepository.listByBeneficiary(beneficiaryId);
+        if (!cancelled) {
+          setUploads(results);
+          setError(undefined);
+        }
+      } catch (err) {
+        if (!cancelled) {
+          setUploads([]);
+          setError(err instanceof Error ? err.message : 'Unable to load uploads.');
+        }
+      } finally {
+        if (!cancelled) {
+          setIsLoading(false);
+        }
+      }
+    };
+
+    load();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [beneficiaryId]);
+
+  return { uploads, isLoading, error };
+};
+
+const formatUploadTimestamp = (value?: string) => {
+  if (!value) return 'Just now';
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return value;
+  return date.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
+};
+
+const getUploadStatusPalette = (
+  theme: ReturnType<typeof useAppTheme>,
+  status: SubmissionEvidence['status'],
+) => {
+  switch (status) {
+    case 'approved':
+      return { background: `${theme.colors.success}20`, text: theme.colors.success, label: 'Approved' };
+    case 'rejected':
+      return { background: `${theme.colors.error}20`, text: theme.colors.error, label: 'Rejected' };
+    case 'pending':
+      return { background: `${theme.colors.warning}20`, text: theme.colors.warning, label: 'Pending' };
+    case 'syncing':
+      return { background: `${theme.colors.info}20`, text: theme.colors.info, label: 'Syncing' };
+    default:
+      return { background: `${theme.colors.primary}20`, text: theme.colors.primary, label: 'Submitted' };
+  }
+};
 
 export const BeneficiaryListScreen = () => {
   const navigation = useNavigation<any>();
@@ -141,7 +252,35 @@ export const BeneficiaryListScreen = () => {
     [records]
   );
 
-  const dataSource = loans.length ? loans : FALLBACK_BENEFICIARIES;
+  const dataSource = useMemo(() => {
+    if (!loans.length) {
+      return FALLBACK_BENEFICIARIES;
+    }
+    const existingIds = new Set(loans.map((item) => item.loanId));
+    const demoAdditions = FALLBACK_BENEFICIARIES.filter((item) => !existingIds.has(item.loanId));
+    return [...loans, ...demoAdditions];
+  }, [loans]);
+
+  const getDisplayStatus = (loan: BeneficiaryLoan) => {
+    if (HIGH_PRIORITY_LOAN_IDS.has(loan.loanId)) {
+      return 'High Priority';
+    }
+    switch (loan.status as string) {
+      case 'sanctioned':
+        return 'Synced';
+      case 'disbursed':
+      case 'approved':
+        return 'Approved';
+      case 'pending':
+      case 'pending-review':
+        return 'Pending';
+      case 'rejected':
+      case 'closed':
+        return 'Rejected';
+      default:
+        return loan.status.toString().toUpperCase();
+    }
+  };
 
   const filtered = useMemo(() => {
     return dataSource.filter((item) => {
@@ -152,13 +291,13 @@ export const BeneficiaryListScreen = () => {
       }
       switch (filter) {
         case 'Pending':
-          return item.status === 'pending';
+          return ['pending', 'pending-review'].includes(item.status as string);
         case 'Approved':
-          return item.status === 'sanctioned' || item.status === 'disbursed';
+          return ['approved', 'sanctioned', 'disbursed', 'synced'].includes(item.status as string);
         case 'Rejected':
-          return item.status === 'closed';
+          return ['rejected', 'closed'].includes(item.status as string);
         case 'High Priority':
-          return false;
+          return HIGH_PRIORITY_LOAN_IDS.has(item.loanId);
         default:
           return true;
       }
@@ -166,12 +305,16 @@ export const BeneficiaryListScreen = () => {
   }, [dataSource, filter, query]);
 
   const getStatusColor = (status: BeneficiaryLoan['status']) => {
-    switch (status) {
+    switch (status as string) {
       case 'sanctioned':
       case 'disbursed':
+      case 'approved':
+      case 'synced':
         return accent;
       case 'pending':
+      case 'pending-review':
         return '#F59E0B';
+      case 'rejected':
       case 'closed':
         return '#DC2626';
       default:
@@ -186,45 +329,16 @@ export const BeneficiaryListScreen = () => {
   const closeDetails = () => setDetailContext(null);
 
   const renderCard = ({ item }: { item: BeneficiaryLoan }) => (
-    <TouchableOpacity
-      style={[
-        styles.card,
-        {
-          backgroundColor: theme.colors.surface,
-          borderColor: borderSoft,
-          shadowColor: withAlpha('#000000', 0.08),
-        },
-      ]}
-      activeOpacity={0.85}
-      onPress={() => handleViewDetails(item)}
-    >
-      <View style={styles.cardHeader}>
-        <View>
-          <AppText style={[styles.cardTitle, { color: theme.colors.text }]}>{item.name}</AppText>
-          <AppText style={[styles.cardSubtitle, { color: theme.colors.muted }]}>Loan ID: {item.loanId}</AppText>
-        </View>
-        <View style={[styles.statusPill, { backgroundColor: withAlpha(getStatusColor(item.status), 0.16) }]}> 
-          <AppText style={[styles.statusPillText, { color: getStatusColor(item.status) }]}>
-            {item.status === 'sanctioned' ? 'Synced' : item.status.toUpperCase()}
-          </AppText>
-        </View>
-      </View>
-
-      <View style={styles.cardFooterCompact}>
-        <AppText style={[styles.compactMeta, { color: theme.colors.muted }]}>
-          Tap to view evidence & instructions
-        </AppText>
-        <AppButton
-          label="View Details"
-          variant="outline"
-          compact
-          icon="chevron-right"
-          iconPosition="right"
-          onPress={() => handleViewDetails(item)}
-          style={styles.viewDetailsButton}
-        />
-      </View>
-    </TouchableOpacity>
+    <BeneficiaryCard
+      loan={item}
+      metadata={recordMap[item.id]?.metadata}
+      accent={accent}
+      accentSoft={accentSoft}
+      borderSoft={borderSoft}
+      onViewDetails={handleViewDetails}
+      getStatusColor={getStatusColor}
+      getDisplayStatus={getDisplayStatus}
+    />
   );
 
   return (
@@ -289,6 +403,138 @@ export const BeneficiaryListScreen = () => {
         metadata={detailContext?.metadata}
         onClose={closeDetails}
       />
+    </View>
+  );
+};
+
+type BeneficiaryCardProps = {
+  loan: BeneficiaryLoan;
+  metadata?: BeneficiaryMetadata;
+  accent: string;
+  accentSoft: string;
+  borderSoft: string;
+  onViewDetails: (loan: BeneficiaryLoan) => void;
+  getStatusColor: (status: BeneficiaryLoan['status']) => string;
+  getDisplayStatus: (loan: BeneficiaryLoan) => string;
+};
+
+const BeneficiaryCard = ({
+  loan,
+  metadata,
+  accent,
+  accentSoft,
+  borderSoft,
+  onViewDetails,
+  getStatusColor,
+  getDisplayStatus,
+}: BeneficiaryCardProps) => {
+  const theme = useAppTheme();
+  const beneficiaryId = metadata?.beneficiaryUid ?? loan.id;
+  const { uploads, isLoading, error } = useBeneficiaryUploads(beneficiaryId);
+  const previewUploads = uploads.slice(0, 3);
+  const totalUploads = uploads.length || metadata?.docCount || 0;
+  const isHighPriority = HIGH_PRIORITY_LOAN_IDS.has(loan.loanId);
+  const statusColor = isHighPriority ? '#C2410C' : getStatusColor(loan.status);
+
+  return (
+    <TouchableOpacity
+      style={[
+        styles.card,
+        {
+          backgroundColor: theme.colors.surface,
+          borderColor: borderSoft,
+          shadowColor: withAlpha('#000000', 0.08),
+        },
+      ]}
+      activeOpacity={0.85}
+      onPress={() => onViewDetails(loan)}
+    >
+      <View style={styles.cardHeader}>
+        <View>
+          <AppText style={[styles.cardTitle, { color: theme.colors.text }]}>{loan.name}</AppText>
+          <AppText style={[styles.cardSubtitle, { color: theme.colors.muted }]}>Loan ID: {loan.loanId}</AppText>
+        </View>
+        <View style={[styles.statusPill, { backgroundColor: withAlpha(statusColor, 0.16) }]}>
+          <AppText style={[styles.statusPillText, { color: statusColor }]}>
+            {getDisplayStatus(loan)}
+          </AppText>
+        </View>
+      </View>
+
+      <View style={[styles.evidencePreviewContainer, { borderColor: borderSoft }]}
+        accessibilityLabel={`Evidence uploads for ${loan.name}`}
+      >
+        <View style={styles.evidencePreviewHeader}>
+          <AppText style={[styles.evidencePreviewTitle, { color: theme.colors.text }]}>Evidence uploads</AppText>
+          <AppText style={[styles.evidencePreviewCount, { color: theme.colors.muted }]}>
+            {totalUploads} item{totalUploads === 1 ? '' : 's'}
+          </AppText>
+        </View>
+
+        {isLoading ? (
+          <ActivityIndicator color={theme.colors.primary} style={styles.previewLoader} />
+        ) : previewUploads.length ? (
+          previewUploads.map((upload) => (
+            <EvidencePreviewRow key={upload.id} upload={upload} theme={theme} />
+          ))
+        ) : (
+          <View style={styles.previewEmptyRow}>
+            <Ionicons name="cloud-upload-outline" size={16} color={theme.colors.muted} />
+            <AppText style={[styles.previewMeta, { color: theme.colors.muted }]}>No uploads yet</AppText>
+          </View>
+        )}
+
+        {error ? <AppText style={[styles.previewError, { color: theme.colors.error }]}>{error}</AppText> : null}
+      </View>
+
+      <View style={styles.cardFooterCompact}>
+        <AppText style={[styles.compactMeta, { color: theme.colors.muted }]}>
+          Tap to view all evidence & instructions
+        </AppText>
+        <AppButton
+          label="View Details"
+          variant="outline"
+          compact
+          icon="chevron-right"
+          iconPosition="right"
+          onPress={() => onViewDetails(loan)}
+          style={styles.viewDetailsButton}
+        />
+      </View>
+    </TouchableOpacity>
+  );
+};
+
+const EvidencePreviewRow = ({
+  upload,
+  theme,
+}: {
+  upload: SubmissionEvidence;
+  theme: ReturnType<typeof useAppTheme>;
+}) => {
+  const palette = getUploadStatusPalette(theme, upload.status);
+  const isVideo = upload.mediaType === 'video';
+
+  return (
+    <View style={styles.evidencePreviewRow}>
+      <View style={[styles.previewIcon, { backgroundColor: withAlpha(theme.colors.primary, 0.14) }]}>
+        <Ionicons
+          name={isVideo ? 'videocam-outline' : 'image-outline'}
+          size={16}
+          color={theme.colors.primary}
+        />
+      </View>
+      <View style={styles.previewTextCol}>
+        <AppText numberOfLines={1} style={[styles.previewTitle, { color: theme.colors.text }]}>
+          {upload.assetName || (isVideo ? 'Video upload' : 'Photo upload')}
+        </AppText>
+        <AppText numberOfLines={1} style={[styles.previewMeta, { color: theme.colors.muted }]}>
+          {formatUploadTimestamp(upload.capturedAt || upload.submittedAt)}
+        </AppText>
+      </View>
+      <View style={[styles.uploadStatusPill, { backgroundColor: palette.background }]}>
+        <AppText style={[styles.uploadStatusText, { color: palette.text }]}>{palette.label}</AppText>
+      </View>
     </View>
   );
 };
@@ -770,6 +1016,45 @@ const styles = StyleSheet.create({
   cardSubtitle: { fontSize: 12, color: '#6B7280', marginTop: 2 },
   statusPill: { paddingHorizontal: 12, paddingVertical: 4, borderRadius: 999 },
   statusPillText: { fontWeight: '600' },
+  evidencePreviewContainer: {
+    borderWidth: 1,
+    borderRadius: 12,
+    padding: 12,
+    marginBottom: 12,
+    backgroundColor: '#F9FAFB',
+    gap: 8,
+  },
+  evidencePreviewHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  evidencePreviewTitle: { fontSize: 14, fontWeight: '600' },
+  evidencePreviewCount: { fontSize: 12 },
+  evidencePreviewRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
+  previewIcon: {
+    width: 32,
+    height: 32,
+    borderRadius: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  previewTextCol: { flex: 1 },
+  previewTitle: { fontSize: 13, fontWeight: '600' },
+  previewMeta: { fontSize: 12 },
+  uploadStatusPill: { paddingHorizontal: 10, paddingVertical: 4, borderRadius: 999 },
+  uploadStatusText: { fontSize: 12, fontWeight: '600' },
+  previewEmptyRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  previewLoader: { marginVertical: 4 },
+  previewError: { fontSize: 12, marginTop: 2 },
   cardFooterCompact: {
     flexDirection: 'row',
     alignItems: 'center',
