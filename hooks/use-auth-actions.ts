@@ -43,6 +43,15 @@ const staticProfiles: Record<string, UserProfile> = {
     institution: 'National Bank',
     branch: 'Bhopal HQ',
   },
+  '7894558720': {
+    id: 'officer-4',
+    name: 'Test Officer',
+    mobile: '7894558720',
+    role: 'officer',
+    department: 'MSME Directorate',
+    designation: 'General Officer',
+    region: 'General',
+  },
 };
 
 const resolveProfile = async (mobile: string): Promise<UserProfile> => {

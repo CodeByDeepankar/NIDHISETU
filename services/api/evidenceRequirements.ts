@@ -28,7 +28,10 @@ export const evidenceRequirementApi = {
       .select('*')
       .eq('beneficiary_id', beneficiaryId)
       .order('created_at', { ascending: false });
-    if (error) throw error;
+    if (error) {
+        console.error('fetch reqs error:', JSON.stringify(error, null, 2));
+        throw error;
+    }
     return data ?? [];
   },
 

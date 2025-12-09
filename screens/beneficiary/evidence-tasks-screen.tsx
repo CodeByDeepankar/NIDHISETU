@@ -44,11 +44,11 @@ export const EvidenceTasksScreen = () => {
 
           const [primaryReq, primarySub] = await Promise.all([
             evidenceRequirementApi.list(primaryKey).catch(err => {
-                console.error('Failed to load requirements:', err);
+                console.error('Failed to load requirements:', JSON.stringify(err, null, 2));
                 return [];
             }),
             submissionRepository.listByBeneficiary(primaryKey).catch(err => {
-                console.error('Failed to load submissions:', err);
+                console.error('Failed to load submissions:', JSON.stringify(err, null, 2));
                 return [];
             })
           ]);
