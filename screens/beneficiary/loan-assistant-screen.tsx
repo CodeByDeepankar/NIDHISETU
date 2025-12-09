@@ -704,11 +704,13 @@ const createStyles = (theme: AppTheme) => {
       shadowRadius: 16,
       elevation: 6,
     },
+    messagesWrapper: {
+      flex: 1,
+    },
     inputWrapper: {
       position: "absolute",
       left: 0,
       right: 0,
-      bottom: 0,
       paddingHorizontal: 12,
       paddingBottom: 12,
       paddingTop: 8,
