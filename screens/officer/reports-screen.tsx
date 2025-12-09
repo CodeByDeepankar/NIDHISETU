@@ -1,6 +1,6 @@
-import { useState, useCallback, useEffect } from 'react';
+import { analyticsService, type ActivityLogEntry, type AnalyticsSummary, type PerformancePoint } from '@/services/api/analyticsService';
 import { useFocusEffect } from '@react-navigation/native';
-import { analyticsService, type AnalyticsSummary, type ActivityLogEntry, type PerformancePoint } from '@/services/api/analyticsService';
+import { useCallback, useState } from 'react';
 
 import { AppButton } from '@/components/atoms/app-button';
 import type { IconName } from '@/components/atoms/app-icon';
@@ -10,7 +10,7 @@ import { WaveHeader } from '@/components/molecules/wave-header';
 import MapView, { Marker, PROVIDER_GOOGLE } from '@/components/react-native-maps-shim';
 import type { ColorToken } from '@/constants/theme';
 import { useAppTheme } from '@/hooks/use-app-theme';
-import { Pressable, ScrollView, StyleSheet, View, useWindowDimensions } from 'react-native';
+import { Alert, Pressable, ScrollView, StyleSheet, View, useWindowDimensions } from 'react-native';
 import Svg, { Circle, Defs, Stop, LinearGradient as SvgLinearGradient } from 'react-native-svg';
 
 const GAUGE_SIZE = 160;
@@ -304,6 +304,12 @@ const quickActions: Array<{ label: string; icon: IconName; tone: ColorToken; hel
     tone: 'error',
     helper: 'Escalate when anomalies persist or address needs validation.',
   },
+  {
+    label: 'Reject',
+    icon: 'close-circle',
+    tone: 'error',
+    helper: 'Decline when fraud is confirmed; add a clear rejection reason and notify applicant.',
+  },
 ];
 
 const quickActionSummary = {
@@ -396,6 +402,24 @@ const SummaryStrip = ({ data }: { data: AnalyticsSummary }) => {
 
 const QuickActionPanel = () => {
   const theme = useAppTheme();
+  const handleAction = (action: string) => {
+    switch (action) {
+      case 'Approve':
+        Alert.alert('Approve file', 'Confirm when AI risk is low and KYC + site proofs align.');
+        break;
+      case 'Ask Re-Upload':
+        Alert.alert('Ask for re-upload', 'Request clearer or corrected documents and add a note for the applicant.');
+        break;
+      case 'Raise Field Inspection':
+        Alert.alert('Raise field inspection', 'Escalate to field verification when anomalies persist or address validation is needed.');
+        break;
+      case 'Reject':
+        Alert.alert('Reject file', 'Reject only when fraud is confirmed; record the rejection reason and notify the applicant.');
+        break;
+      default:
+        break;
+    }
+  };
   return (
     <View style={[styles.card, styles.quickActionsCard, { backgroundColor: theme.colors.surface }]}> 
       <View style={styles.quickActionHeader}>
@@ -452,6 +476,7 @@ const QuickActionPanel = () => {
               tone={action.tone}
               variant="outline"
               style={styles.quickActionButton}
+              onPress={() => handleAction(action.label)}
             />
             <AppText variant="bodySmall" color="muted">
               {action.helper}

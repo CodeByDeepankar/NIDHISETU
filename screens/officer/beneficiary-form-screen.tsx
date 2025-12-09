@@ -16,10 +16,10 @@ import { beneficiaryRepository } from '@/services/api/beneficiaryRepository';
 import type { AddressDetails } from '@/services/googlePlaces';
 import { useAuthStore } from '@/state/authStore';
 import type {
-  BeneficiaryFormPayload,
-  BeneficiaryFormValues,
-  BeneficiaryMetadata,
-  OfficerContext,
+    BeneficiaryFormPayload,
+    BeneficiaryFormValues,
+    BeneficiaryMetadata,
+    OfficerContext,
 } from '@/types/beneficiary';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 
@@ -180,6 +180,7 @@ export const BeneficiaryFormScreen = ({ navigation }: BeneficiaryFormScreenProps
 			beneficiaryUid: `BEN-${Date.now().toString().slice(-6)}`,
 			createdAt: new Date().toISOString(),
 			status: 'Active',
+			lastSynced: null,
 		}),
 		[]
 	);
@@ -209,6 +210,8 @@ export const BeneficiaryFormScreen = ({ navigation }: BeneficiaryFormScreenProps
 	const metadata: BeneficiaryMetadata = {
 		...metadataSeed,
 		updatedAt: new Date().toISOString(),
+		loanId: values.loanId,
+		loanAmount: Number(values.sanctionAmount || 0),
 		docCount: 0,
 		completionPercent,
 		createdBy: officerContext,

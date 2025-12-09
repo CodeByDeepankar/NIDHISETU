@@ -93,15 +93,6 @@ export const SupportScreen = () => {
       <WaveHeader title="Support" subtitle="We're here to help you anytime." height={160} />
 
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
-        <View style={styles.topCopy}>
-          <AppText variant="titleLarge" weight="700" color="text" style={styles.heading}>
-            Support
-          </AppText>
-          <AppText variant="bodyMedium" color="muted">
-            We’re here to help you anytime.
-          </AppText>
-        </View>
-
         <View style={styles.quickGrid}>
           {quickActions.map((item) => (
             <View key={item.key} style={[styles.quickCard, { backgroundColor: theme.colors.surface }]}> 
@@ -210,9 +201,7 @@ export const SupportScreen = () => {
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
-  content: { padding: 16, gap: 20, paddingBottom: 48 },
-  topCopy: { gap: 4 },
-  heading: { fontSize: 22 },
+  content: { padding: 16, paddingTop: 28, gap: 20, paddingBottom: 48 },
   quickGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',

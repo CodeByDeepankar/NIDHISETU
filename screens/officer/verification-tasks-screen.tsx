@@ -254,6 +254,141 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
     elevation: 2,
   },
+  cardHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  headerLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  avatarPlaceholder: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: '#E5E7EB',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  avatarText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#374151',
+  },
+  cardTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#111827',
+  },
+  cardSubtitle: {
+    fontSize: 12,
+    color: '#6B7280',
+  },
+  priorityBadge: {
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 12,
+  },
+  highPriority: {
+    backgroundColor: '#FEE2E2',
+  },
+  normalPriority: {
+    backgroundColor: '#E0E7FF',
+  },
+  priorityText: {
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  highPriorityText: {
+    color: '#B91C1C',
+  },
+  normalPriorityText: {
+    color: '#1D4ED8',
+  },
+  metaGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    marginTop: 12,
+  },
+  metaItem: {
+    width: '50%',
+    marginBottom: 8,
+  },
+  metaLabel: {
+    fontSize: 12,
+    color: '#6B7280',
+  },
+  metaValue: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#111827',
+  },
+  syncedRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginTop: 8,
+  },
+  syncedText: {
+    fontSize: 12,
+    color: '#0F9D58',
+  },
+  cardBody: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginTop: 12,
+  },
+  infoItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  infoText: {
+    fontSize: 12,
+    color: '#4B5563',
+  },
+  sectionBlock: {
+    marginTop: 12,
+    borderTopWidth: 1,
+    borderTopColor: '#F3F4F6',
+    paddingTop: 12,
+    gap: 8,
+  },
+  sectionTitle: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#111827',
+  },
+  bulletRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  bulletText: {
+    fontSize: 12,
+    color: '#374151',
+    flex: 1,
+  },
+  cardFooter: {
+    marginTop: 16,
+  },
+  reviewButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    backgroundColor: '#2563EB',
+    paddingVertical: 10,
+    borderRadius: 10,
+  },
+  reviewButtonText: {
+    color: 'white',
+    fontSize: 14,
+    fontWeight: '600',
+  },
   cardRow: {
     flexDirection: 'row',
     gap: 12,

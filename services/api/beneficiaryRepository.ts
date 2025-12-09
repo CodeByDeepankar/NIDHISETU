@@ -1,9 +1,9 @@
 import { supabase } from '@/lib/supabaseClient';
 import type {
-    BeneficiaryFormPayload,
-    BeneficiaryMetadata,
-    BeneficiaryRecord,
-    OfficerContext,
+  BeneficiaryFormPayload,
+  BeneficiaryMetadata,
+  BeneficiaryRecord,
+  OfficerContext,
 } from '@/types/beneficiary';
 import type { BeneficiaryProfile } from '@/types/entities';
 
@@ -31,6 +31,7 @@ const toDbPayload = (payload: BeneficiaryFormPayload & { id: string; metadata: B
   village: payload.village,
   mobile: payload.mobile,
   metadata: payload.metadata,
+  created_at: payload.metadata?.createdAt ?? new Date().toISOString(),
 });
 
 const fromDbRecord = (record: any): BeneficiaryRecord => ({
@@ -49,6 +50,7 @@ const fromDbRecord = (record: any): BeneficiaryRecord => ({
   metadata: (record.metadata || {}) as BeneficiaryMetadata,
   schemeName: record.scheme_name,
   district: record.district,
+  createdAt: record.created_at ?? record.metadata?.createdAt ?? new Date().toISOString(),
 });
 
 const saveDraft = async (
@@ -77,6 +79,7 @@ const saveDraft = async (
     ...sanitizedValues,
     id: normalizedMobile,
     metadata: metadataToPersist,
+    createdAt: metadataToPersist.createdAt ?? new Date().toISOString(),
   };
 
   const dbPayload = toDbPayload(recordToSave);
@@ -150,6 +153,9 @@ const updateProfile = async (mobile: string, updates: Partial<BeneficiaryProfile
     const metadata = {
         beneficiaryUid: normalizedMobile,
         createdAt: new Date().toISOString(),
+      lastSynced: null,
+      loanAmount: 0,
+      loanId: undefined,
         updatedAt: new Date().toISOString(),
         status: 'draft',
         docCount: 0,

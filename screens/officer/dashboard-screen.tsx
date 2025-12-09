@@ -1,11 +1,12 @@
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
-import { RefreshControl, ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native';
+import { Pressable, RefreshControl, ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native';
 
 import { AppText } from '@/components/atoms/app-text';
 import { WaveHeader } from '@/components/molecules/wave-header';
+import { deadlineCrossedLoans, highRiskLoans, pendingReviewLoans, type LoanItem } from '@/components/organisms/beneficiary-risk-lists';
 import type { AppTheme } from '@/constants/theme';
 import { useAppTheme } from '@/hooks/use-app-theme';
 import { useOfficerBeneficiaries } from '@/hooks/use-officer-beneficiaries';
@@ -17,24 +18,85 @@ export const OfficerDashboardScreen = () => {
   const { analytics, isRefreshing, refresh } = useOfficerBeneficiaries();
   const profile = useAuthStore((state) => state.profile);
 
+  const HEADER_HEIGHT = 240;
+  const CONTENT_TOP_PADDING = 96;
+
   const officerName = profile?.name ?? 'District Officer';
   const officerId = profile?.id ?? 'OFF-2024-001';
   const region = (profile as any)?.region ?? 'Bhopal Division';
   const palette = useMemo(() => buildDashboardPalette(theme), [theme]);
   const styles = useMemo(() => createDashboardStyles(palette), [palette]);
+  const [openSections, setOpenSections] = useState({
+    high: true,
+    pending: true,
+    deadline: true,
+  });
 
   const handleRefresh = async () => {
     await refresh();
   };
 
-  const highRiskCases = Math.max(Math.round((analytics?.pending ?? 10) * 0.3), 4);
-  const pendingReviews = analytics?.pending ?? 6;
-  const deadlineCrossed = Math.max(Math.round((analytics?.total ?? 30) * 0.06), 2);
+  const handleViewDetails = (loan: LoanItem) => {
+    navigation.navigate('VerificationTasks', {
+      filter: loan.status,
+      loanId: loan.loanId,
+    });
+  };
+
+  const highRiskAlerts = highRiskLoans;
+  const pendingReviewAlerts = pendingReviewLoans;
+  const deadlineCrossedAlerts = deadlineCrossedLoans;
+
+  const toggleSection = (key: 'high' | 'pending' | 'deadline') => {
+    setOpenSections((prev) => ({ ...prev, [key]: !prev[key] }));
+  };
+
+  const renderAlertCard = (
+    key: 'high' | 'pending' | 'deadline',
+    title: string,
+    color: string,
+    data: LoanItem[]
+  ) => (
+    <View key={key} style={[styles.alertCard, { borderColor: `${color}40`, backgroundColor: `${color}0D` }]}> 
+      <Pressable style={styles.alertCardHeader} onPress={() => toggleSection(key)}>
+        <View style={styles.alertCardTitleRow}>
+          <View style={[styles.alertDot, { backgroundColor: color }]} />
+          <AppText style={[styles.sectionTitle, { color }]}>{title}</AppText>
+        </View>
+        <View style={styles.alertHeaderRight}>
+          <AppText style={[styles.alertCardCount, { color }]}>{data.length} items</AppText>
+          <Ionicons
+            name={openSections[key] ? 'chevron-up' : 'chevron-down'}
+            size={18}
+            color={color}
+          />
+        </View>
+      </Pressable>
+
+      {openSections[key] ? (
+        <View style={styles.alertCardBody}>
+          {data.map((item) => (
+            <View key={item.id} style={styles.alertItemRow}>
+              <View style={styles.alertItemLeft}>
+                <AppText style={styles.alertItemName}>{item.name}</AppText>
+                <AppText style={styles.alertItemMeta}>Loan ID: {item.loanId}</AppText>
+                <AppText style={styles.alertItemMeta}>Bank: {item.bank}</AppText>
+                <AppText style={styles.alertItemMeta}>Last Updated: {item.lastUpdated ?? '—'}</AppText>
+              </View>
+              <View style={[styles.alertStatusPill, { backgroundColor: `${color}22` }]}> 
+                <AppText style={[styles.alertStatusText, { color }]}>{item.status}</AppText>
+              </View>
+            </View>
+          ))}
+        </View>
+      ) : null}
+    </View>
+  );
 
   const alertChips = [
-    { title: 'High Risk', count: highRiskCases.toString().padStart(2, '0'), color: palette.red, icon: 'arrow-forward' },
-    { title: 'Pending Review', count: pendingReviews.toString().padStart(2, '0'), color: palette.gold, icon: 'arrow-forward' },
-    { title: 'Deadline Crossed', count: deadlineCrossed.toString().padStart(2, '0'), color: palette.blue, icon: 'arrow-forward' },
+    { title: 'High Risk', count: highRiskAlerts.length.toString().padStart(2, '0'), color: palette.red, icon: 'arrow-forward', onPress: () => navigation.navigate('VerificationTasks', { filter: 'highRisk' }) },
+    { title: 'Pending Review', count: pendingReviewAlerts.length.toString().padStart(2, '0'), color: palette.gold, icon: 'arrow-forward', onPress: () => navigation.navigate('VerificationTasks', { filter: 'pending' }) },
+    { title: 'Deadline Crossed', count: deadlineCrossedAlerts.length.toString().padStart(2, '0'), color: palette.blue, icon: 'arrow-forward', onPress: () => navigation.navigate('VerificationTasks', { filter: 'deadline' }) },
   ];
 
   const utilisationTrend = [
@@ -73,6 +135,7 @@ export const OfficerDashboardScreen = () => {
       <WaveHeader
         title="Loan Monitoring"
         subtitle="District intelligence & tasks"
+        height={HEADER_HEIGHT}
         rightAction={
           <TouchableOpacity onPress={() => navigation.navigate('Notifications')}>
             <Ionicons name="notifications-outline" size={24} color="white" />
@@ -81,10 +144,20 @@ export const OfficerDashboardScreen = () => {
       />
 
       <ScrollView
-        contentContainerStyle={styles.scrollContent}
+        contentContainerStyle={[styles.scrollContent, { paddingTop: CONTENT_TOP_PADDING }]}
         refreshControl={<RefreshControl refreshing={isRefreshing} onRefresh={handleRefresh} />}
         showsVerticalScrollIndicator={false}
+        style={{ backgroundColor: palette.background }}
       >
+        <TouchableOpacity
+          style={styles.notificationFab}
+          onPress={() => navigation.navigate('Notifications')}
+          accessibilityRole="button"
+          accessibilityLabel="Open notifications"
+        >
+          <Ionicons name="notifications-outline" size={20} color={palette.blue} />
+        </TouchableOpacity>
+
         <View style={styles.profileStrip}>
           <View style={styles.profileIdentity}>
             <View style={styles.avatarSmall}>
@@ -108,11 +181,18 @@ export const OfficerDashboardScreen = () => {
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
             <AppText style={styles.sectionTitle}>Alerts</AppText>
-            <AppText style={styles.sectionMeta}>Refreshed 5 min ago</AppText>
+            <TouchableOpacity onPress={handleRefresh}>
+              <AppText style={[styles.sectionMeta, { color: palette.blue }]}>Refresh</AppText>
+            </TouchableOpacity>
           </View>
           <View style={styles.alertChipsRow}>
             {alertChips.map((chip) => (
-              <View key={chip.title} style={[styles.alertChip, { backgroundColor: `${chip.color}12`, borderColor: `${chip.color}40` }]}> 
+              <Pressable
+                key={chip.title}
+                style={[styles.alertChip, { backgroundColor: `${chip.color}12`, borderColor: `${chip.color}40` }]}
+                onPress={chip.onPress}
+                android_ripple={{ color: `${chip.color}30`, borderless: false }}
+              >
                 <AppText style={[styles.alertChipLabel, { color: chip.color }]}>
                   {chip.title}
                 </AppText>
@@ -120,8 +200,14 @@ export const OfficerDashboardScreen = () => {
                   <AppText style={[styles.alertChipCount, { color: chip.color }]}>{chip.count}</AppText>
                   <Ionicons name={chip.icon as any} size={14} color={chip.color} />
                 </View>
-              </View>
+              </Pressable>
             ))}
+          </View>
+
+          <View style={styles.alertAccordionContainer}>
+            {renderAlertCard('high', 'High Risk', palette.red, highRiskAlerts)}
+            {renderAlertCard('pending', 'Pending Review', palette.gold, pendingReviewAlerts)}
+            {renderAlertCard('deadline', 'Deadline Crossed', palette.blue, deadlineCrossedAlerts)}
           </View>
         </View>
 
@@ -258,10 +344,25 @@ const createDashboardStyles = (palette: DashboardPalette) =>
       backgroundColor: palette.background,
     },
     scrollContent: {
-      paddingTop: 110,
       paddingHorizontal: 20,
       paddingBottom: 24,
       gap: 20,
+    },
+    notificationFab: {
+      alignSelf: 'flex-end',
+      width: 36,
+      height: 36,
+      borderRadius: 18,
+      borderWidth: 1,
+      borderColor: palette.borderSoft,
+      backgroundColor: palette.surface,
+      alignItems: 'center',
+      justifyContent: 'center',
+      shadowColor: palette.navy,
+      shadowOpacity: 0.08,
+      shadowRadius: 8,
+      shadowOffset: { width: 0, height: 2 },
+      elevation: 3,
     },
     profileStrip: {
       flexDirection: 'row',
@@ -278,6 +379,14 @@ const createDashboardStyles = (palette: DashboardPalette) =>
       shadowRadius: 12,
       shadowOffset: { width: 0, height: 4 },
       elevation: 3,
+    },
+    avatarSmall: {
+      width: 40,
+      height: 40,
+      borderRadius: 16,
+      backgroundColor: `${palette.blue}15`,
+      alignItems: 'center',
+      justifyContent: 'center',
     },
     profileIdentity: {
       flex: 1,
@@ -304,6 +413,19 @@ const createDashboardStyles = (palette: DashboardPalette) =>
       paddingHorizontal: 12,
       borderRadius: 999,
       backgroundColor: palette.accentSoft,
+    },
+    statusPill: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 8,
+      paddingHorizontal: 10,
+      paddingVertical: 6,
+      borderRadius: 999,
+    },
+    statusDot: {
+      width: 8,
+      height: 8,
+      borderRadius: 4,
     },
     profileBadgeText: {
       fontSize: 12,
@@ -367,6 +489,75 @@ const createDashboardStyles = (palette: DashboardPalette) =>
       fontSize: 16,
       fontWeight: '700',
       color: palette.navy,
+    },
+    alertAccordionContainer: {
+      gap: 12,
+    },
+    alertCard: {
+      borderWidth: 1,
+      borderRadius: 14,
+      padding: 12,
+      gap: 8,
+    },
+    alertCardHeader: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+    },
+    alertCardTitleRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 8,
+    },
+    alertHeaderRight: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 8,
+    },
+    alertCardCount: {
+      fontSize: 12,
+      fontWeight: '600',
+    },
+    alertCardBody: {
+      gap: 10,
+      paddingTop: 4,
+    },
+    alertItemRow: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'flex-start',
+      paddingVertical: 8,
+      borderBottomWidth: StyleSheet.hairlineWidth,
+      borderBottomColor: palette.borderSoft,
+      gap: 12,
+    },
+    alertItemLeft: {
+      flex: 1,
+      gap: 4,
+    },
+    alertItemName: {
+      fontSize: 14,
+      fontWeight: '700',
+      color: palette.navy,
+    },
+    alertItemMeta: {
+      fontSize: 12,
+      color: palette.slate,
+    },
+    alertStatusPill: {
+      paddingHorizontal: 10,
+      paddingVertical: 6,
+      borderRadius: 999,
+      alignSelf: 'flex-start',
+    },
+    alertStatusText: {
+      fontSize: 12,
+      fontWeight: '700',
+    },
+    alertDot: {
+      width: 8,
+      height: 8,
+      borderRadius: 4,
     },
     utilisationCard: {
       borderRadius: 20,
